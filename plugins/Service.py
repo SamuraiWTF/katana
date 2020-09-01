@@ -49,7 +49,7 @@ class Service(Plugin):
                                                             params.get('name'), status_code))
 
         elif params.get('state') == 'restarted':
-            restart_status_code = subprocess.call(['systemctl', 'restart', params.get('name'), 'no-pager'])
+            restart_status_code = subprocess.call(['systemctl', 'restart', params.get('name'), '--no-pager'])
             if restart_status_code != 0:
                 raise katanaerrors.CriticalFunctionFailure('service',
                                                         'Retarting the service returned status code {}'.format(
