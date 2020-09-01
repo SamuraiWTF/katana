@@ -38,6 +38,20 @@ install:
         WantedBy=multi-user.target
       mode: 0744
 
+  - name: Generate musashi .env file
+    copy:
+      dest: /opt/targets/musashi/.env
+      content: |
+        CORS_API_PORT=3020
+        CORS_API_HOST=api.cors.dem
+        CORS_CLIENT_HOST=cors-dojo.wtf
+        CORS_CLIENT_PORT=3021
+        OAUTH_PROVIDER_PORT=3030
+        OAUTH_CLIENT_PORT=3031
+        CSP_APP_PORT=3041
+        USE_TLS=FALSE
+      mode: 0744
+
   - name: Setup hosts file entries
     lineinfile:
       dest: /etc/hosts
@@ -91,6 +105,7 @@ remove:
         - /etc/systemd/system/wtf-musashi.service
         - /etc/nginx/conf.d/musashi-cors-client.conf
         - /etc/nginx/conf.d/musashi-cors-api.conf
+        - /opt/targets/musashi/.env
 
   - lineinfile:
       dest: /etc/hosts
