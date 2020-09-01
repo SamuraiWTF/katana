@@ -15,11 +15,11 @@ class Exists(Plugin):
         return os.path.exists(value)
 
     def service(self, value):
-        return_code = subprocess.call(['systemctl', 'status', value])
+        return_code = subprocess.call(['systemctl', 'status', value, '--no-pager'])
         return return_code != 4
 
     def docker(self, value):
-        if subprocess.call(['systemctl', 'status', 'docker']) == 0:
+        if subprocess.call(['systemctl', 'status', 'docker', '--no-pager']) == 0:
             client = docker.DockerClient(base_url='unix://var/run/docker.sock')
             container_list = client.containers.list(filters={'name': value}, all=True)
 

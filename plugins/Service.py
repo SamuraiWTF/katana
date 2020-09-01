@@ -14,14 +14,14 @@ class Service(Plugin):
         if params.get('state') not in ['running', 'stopped', 'restarted']:
             raise katanaerrors.UnrecognizedParamValue('state', params.get('state'), 'service', 'running, stopped, restarted')
 
-        status_code = subprocess.call(['systemctl', 'status', params.get('name')])
+        status_code = subprocess.call(['systemctl', 'status', params.get('name'), '--no-pager'])
 
         if status_code == 4:
             raise katanaerrors.CriticalFunctionFailure('service', 'The specified service could not be found: {}'.format(params.get('name')))
 
         if params.get('state') == 'running':
             if status_code == 3:
-                start_status_code = subprocess.call(['systemctl', 'start', params.get('name')])
+                start_status_code = subprocess.call(['systemctl', 'start', params.get('name'), '--no-pager'])
                 if start_status_code != 0:
                     raise katanaerrors.CriticalFunctionFailure('service',
                                                             'Starting the service returned status code {}'.format(
@@ -35,7 +35,7 @@ class Service(Plugin):
                                                             params.get('name'), status_code))
         elif params.get('state') == 'stopped':
             if status_code == 0:
-                stop_status_code = subprocess.call(['systemctl', 'stop', params.get('name')])
+                stop_status_code = subprocess.call(['systemctl', 'stop', params.get('name'), '--no-pager'])
                 if stop_status_code != 0:
                     raise katanaerrors.CriticalFunctionFailure('service',
                                                             'Stopping the service returned status code {}'.format(
@@ -49,7 +49,7 @@ class Service(Plugin):
                                                             params.get('name'), status_code))
 
         elif params.get('state') == 'restarted':
-            restart_status_code = subprocess.call(['systemctl', 'restart', params.get('name')])
+            restart_status_code = subprocess.call(['systemctl', 'restart', params.get('name'), 'no-pager'])
             if restart_status_code != 0:
                 raise katanaerrors.CriticalFunctionFailure('service',
                                                         'Retarting the service returned status code {}'.format(

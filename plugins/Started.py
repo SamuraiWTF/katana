@@ -11,7 +11,11 @@ class Started(Plugin):
         return ["started"]
 
     def service(self, value):
-        return subprocess.call(['systemctl', 'status', value]) == 0
+        result = subprocess.run(['systemctl', 'status', value, '--no-pager'], text=True)
+        if result.returncode != 0:
+            print(result.stderr)
+        return result.returncode == 0
+        # return subprocess.call(['systemctl', 'status', value]) == 0
 
     def docker(self, value):
         if not self.service("docker"):
