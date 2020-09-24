@@ -88,6 +88,24 @@ install:
         }
       mode: 0644
 
+  - name: Setup hosts file entries
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   csp-dojo.wtf'
+
+  - name: Setup nginx reverse-proxy config for CSP client
+    copy:
+      dest: /etc/nginx/conf.d/musashi-csp-client.conf
+      content: |
+        server {
+          listen 80;
+          server_name csp-dojo.wtf;
+          location / {
+            proxy_pass http://localhost:3041;
+          }
+        }
+      mode: 0644
+
   - service:
       name: nginx
       state: restarted
@@ -105,6 +123,7 @@ remove:
         - /etc/systemd/system/wtf-musashi.service
         - /etc/nginx/conf.d/musashi-cors-client.conf
         - /etc/nginx/conf.d/musashi-cors-api.conf
+        - /etc/nginx/conf.d/musashi-csp.conf
         - /opt/targets/musashi/.env
 
   - lineinfile:
@@ -114,6 +133,10 @@ remove:
   - lineinfile:
       dest: /etc/hosts
       line: '127.0.0.8   api.cors.dem'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   csp-dojo.wtf'
       state: absent
   - service:
       name: nginx
