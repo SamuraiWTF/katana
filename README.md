@@ -21,7 +21,7 @@ install tools and targets.
 ### Using Katana from the Command Line
 From a command line terminal inside your SamuraiWTF environment, simply type katana and the desired arguments. Katana supports the following arguments:
 
-| Argument &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;| Description |
+| Argument | Description |
 | :------------- | ------------- |
 | `list` | List all available modules that are currently supported by Katana. |
 | `install <name>` | Install the supplied module by name. |
