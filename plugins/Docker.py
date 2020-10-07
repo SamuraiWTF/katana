@@ -24,12 +24,16 @@ class Docker(Plugin):
         else:
             images = client.images.list(name=params.get('image'))
             if len(images) == 0:
-                print("       Image not available locally. Pulling from DockerHub.")
-                client.images.pull(params.get('image'))
-
-            container = client.containers.create(image=params.get('image'), name=params.get('name'), detach=True,
-                                                 ports=port_mappings)
-            container.logs()
+                if params.get('path') is None:
+                    print("       Image not available locally. Pulling from DockerHub.")
+                    image_id = client.images.pull(params.get('image'))[0].id
+                else:
+                    print("      Building image locally at {}".format(params.get('path')))
+                    image_id = client.images.build(path=params.get('path'), tag=f'{params.get("name")}:local', forcerm=True)[0].id
+                print(f'Image id: {image_id}')
+                container = client.containers.create(image=image_id, name=params.get('name'), detach=True,
+                                                     ports=port_mappings)
+                container.logs()
             return True, None
 
     def remove(self, params):
@@ -44,6 +48,7 @@ class Docker(Plugin):
             raise katanaerrors.CriticalFunctionFailure('docker', 'Cannot remove a running container.')
         else:
             container_list[0].remove(v=True)
+            client.images.prune()
             return True, "Container removed: '{}".format(params.get('name'))
 
     def start(self, params):
