@@ -106,6 +106,26 @@ install:
         }
       mode: 0644
 
+
+  - name: Setup hosts file entries
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   jwt.demo'
+
+  - name: Setup nginx reverse-proxy config for CORS client
+    copy:
+      dest: /etc/nginx/conf.d/jwt-demo.conf
+      content: |
+        server {
+          listen 80;
+          server_name jwt.demo;
+          location / {
+            proxy_pass http://localhost:3050;
+          }
+        }
+      mode: 0644
+
+
   - service:
       name: nginx
       state: restarted
@@ -124,6 +144,7 @@ remove:
         - /etc/nginx/conf.d/musashi-cors-client.conf
         - /etc/nginx/conf.d/musashi-cors-api.conf
         - /etc/nginx/conf.d/musashi-csp.conf
+        - /etc/nginx/conf.d/jwt-demo.conf
         - /opt/targets/musashi/.env
 
   - lineinfile:
@@ -138,6 +159,12 @@ remove:
       dest: /etc/hosts
       line: '127.0.0.8   csp-dojo.wtf'
       state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   jwt.demo'
+      state: absent
+
+
   - service:
       name: nginx
       state: restarted
