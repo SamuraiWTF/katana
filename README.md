@@ -6,7 +6,7 @@ will be distrubuted to their students, or by self-study students to install the 
 
 _IMPORTANT NOTES:_
 * _Katana runs as root. It is intended only to be used in a temporary classroom environment. Don't install it on any network that is important to you._
-* _Katana is installed as part of the [SamuraiWTF Distrubution](https://github.com/SamuraiWTF/samuraiwtf) and is not intended to be installed or run on a 
+* _Katana is installed as part of the [SamuraiWTF Distribution](https://github.com/SamuraiWTF/samuraiwtf) and is not intended to be installed or run on a 
 non-SamuraiWTF build._
 
 
