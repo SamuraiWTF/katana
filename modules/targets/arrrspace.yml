@@ -6,6 +6,10 @@
     href: http://arrrspace.wtf
     
     install:
+      - name: Install conntrack in root path
+        command:
+          cmd: apt install conntrack
+
       - name: Get the arrrspace repo
         git:
           repo: https://github.com/ProfessionallyEvil/arrrspace.git
@@ -55,6 +59,12 @@
         lineinfile:
           dest: /etc/hosts
           line: '127.0.0.1  api.arrrspace.wtf'
+
+      # hacks to make this work more dynamically without supporting state in katana manifests
+      - name: Write cluster IP to file
+        command:
+          cwd: /opt/targets/arrrspace
+          cmd: minikube ip > /opt/targets/arrrspace/cluster_ip.txt
     
       - name: Set up web app nginx reverse-proxy config
         copy:
@@ -64,7 +74,7 @@
               listen 80;
               server_name arrrspace.wtf;
               location / {
-                proxy_pass http://172.17.0.2:31380;
+                proxy_pass http://{{CLUSTER_IP}}:31380;
               }
             }
           mode: 0644
@@ -77,11 +87,17 @@
               listen 80;
               server_name api.arrrspace.wtf;
               location / {
-                proxy_pass http://172.17.0.2:31337;
+                proxy_pass http://{{CLUSTER_IP}}:31337;
               }
             }
           mode: 0644
-    
+      
+      - name: Set cluster IP in nginx configs
+        command:
+          shell: True
+          unsafe: True
+          cmd: sed -i "s/{{CLUSTER_IP}}/$(cat /opt/targets/arrrspace/cluster_ip.txt)/g" /etc/nginx/conf.d/*arrrspace.conf
+
       - service:
           name: nginx
           state: restarted
