@@ -63,8 +63,10 @@
       # hacks to make this work more dynamically without supporting state in katana manifests
       - name: Write cluster IP to file
         command:
+          unsafe: True
+          shell: True
           cwd: /opt/targets/arrrspace
-          cmd: minikube ip > /opt/targets/arrrspace/cluster_ip.txt
+          cmd: "minikube ip > /opt/targets/arrrspace/cluster_ip.txt"
     
       - name: Set up web app nginx reverse-proxy config
         copy:
