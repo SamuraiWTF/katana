@@ -46,23 +46,33 @@
           cwd: /opt/targets/arrrspace
           cmd: /opt/targets/arrrspace/setup.sh deployservices
     
-      - name: Setup web app hosts file entry
+      - name: Setup web app hosts file entry (wtf)
         lineinfile:
           dest: /etc/hosts
           line: '127.0.0.1  arrrspace.wtf'
     
-      - name: Set api hosts file entry
+      - name: Set api hosts file entry (wtf)
         lineinfile:
           dest: /etc/hosts
           line: '127.0.0.1  api.arrrspace.wtf'
-    
+
+      - name: Setup web app hosts file entry (test)
+        lineinfile:
+          dest: /etc/hosts
+          line: '127.0.0.1  arrrspace.test'
+
+      - name: Set api hosts file entry (test)
+        lineinfile:
+          dest: /etc/hosts
+          line: '127.0.0.1  api.arrrspace.test'
+
       - name: Set up web app nginx reverse-proxy config
         copy:
           dest: /etc/nginx/conf.d/arrrspace.conf
           content: |
             server {
               listen 80;
-              server_name arrrspace.wtf;
+              server_name arrrspace.wtf arrrspace.test;
               location / {
                 proxy_pass http://172.17.0.2:31380;
               }
@@ -75,7 +85,7 @@
           content: |
             server {
               listen 80;
-              server_name api.arrrspace.wtf;
+              server_name api.arrrspace.wtf api.arrrspace.test;
               location / {
                 proxy_pass http://172.17.0.2:31337;
               }

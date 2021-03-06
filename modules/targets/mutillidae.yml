@@ -3,7 +3,7 @@
 name: mutillidae
 category: targets
 description: Test lab focused on OWASP top 10 vulnerabilities.
-href: http://mutillidae.wtf
+href: http://mutillidae.test
 
 install:
   - service:
@@ -16,10 +16,15 @@ install:
         80/tcp: 33080
         22/tcp: 22222
         3306/tcp: 33333
-  - name: Setup hosts file entry
+  - name: Setup hosts file entry (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   mutillidae.wtf'
+
+  - name: Setup hosts file entry (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   mutillidae.test'
 
   - name: Setup nginx reverse-proxy config
     copy:
@@ -27,7 +32,7 @@ install:
       content: |
         server {
           listen 80;
-          server_name mutillidae.wtf;
+          server_name mutillidae.wtf mutillidae.test;
           location / {
             proxy_pass http://localhost:33080;
           }
@@ -43,10 +48,15 @@ remove:
       state: running
   - docker:
       name: mutillidae
-  - name: Remove hosts file entry
+  - name: Remove hosts file entry (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   mutillidae.wtf'
+      state: absent
+  - name: Remove hosts file entry (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   mutillidae.test'
       state: absent
   - rm:
       path: /etc/nginx/conf.d/mutillidae.conf

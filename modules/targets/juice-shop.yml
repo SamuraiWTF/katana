@@ -3,7 +3,7 @@
 name: juice-shop
 category: targets
 description: A rich-featured modern vulnerable app from OWASP, featuring a built-in CTF.
-href: http://juice-shop.wtf
+href: http://juice-shop.test
 
 install:
   - name: Get the latest release page of Juice Shop
@@ -36,10 +36,15 @@ install:
         WantedBy=multi-user.target
       mode: 0744
 
-  - name: Setup hosts file entries
+  - name: Setup hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   juice-shop.wtf'
+
+  - name: Setup hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   juice-shop.test'
 
   - name: Setup nginx reverse-proxy config
     copy:
@@ -47,7 +52,7 @@ install:
       content: |
         server {
           listen 80;
-          server_name juice-shop.wtf;
+          server_name juice-shop.wtf juice-shop.test;
           location / {
             proxy_pass http://localhost:3000;
           }
@@ -72,10 +77,15 @@ remove:
       path: /etc/systemd/system/wtf-juice-shop.service
   - rm:
       path: /etc/nginx/conf.d/juice-shop.conf
-  - name: Setup hosts file entries
+  - name: Remove hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   juice-shop.wtf'
+      state: absent
+  - name: Remove hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   juice-shop.test'
       state: absent
   - service:
       name: nginx
