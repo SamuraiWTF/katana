@@ -6,15 +6,10 @@ description: Convenience domain for payload hosting.
 href: http://amoksecurity.test
 
 install:
-  - name: Setup hosts file entries (tf)
+  - name: Setup hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   amoksecurity.wtf'
-
-  - name: Setup hosts file entries (test)
-      lineinfile:
-        dest: /etc/hosts
-        line: '127.0.0.1   amoksecurity.test'
 
   - name: Create webroot for amoksecurity.wtf
     file:
