@@ -3,10 +3,10 @@
 name: amoksecurity
 category: targets
 description: Convenience domain for payload hosting.
-href: http://amoksecurity.wtf
+href: http://amoksecurity.test
 
 install:
-  - name: Setup hosts file entries
+  - name: Setup hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   amoksecurity.wtf'
@@ -22,7 +22,7 @@ install:
       content: |
         server {
           listen 80;
-          server_name amoksecurity.wtf;
+          server_name amoksecurity.wtf amoksecurity.test;
           location / {
             root /var/www/amoksecurity;
           }
@@ -38,10 +38,15 @@ remove:
       path: /var/www/amoksecurity
   - rm:
       path: /etc/nginx/conf.d/amoksecurity.conf
-  - name: Remove hosts file entry
+  - name: Remove hosts file entry (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   amoksecurity.wtf'
+      state: absent
+  - name: Remove hosts file entry (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   amoksecurity.test'
       state: absent
 
 status:

@@ -50,12 +50,12 @@
           cwd: /opt/targets/arrrspace
           cmd: /opt/targets/arrrspace/setup.sh deployservices
     
-      - name: Setup web app hosts file entry
+      - name: Setup web app hosts file entry (wtf)
         lineinfile:
           dest: /etc/hosts
           line: '127.0.0.1  arrrspace.wtf'
     
-      - name: Set api hosts file entry
+      - name: Set api hosts file entry (wtf)
         lineinfile:
           dest: /etc/hosts
           line: '127.0.0.1  api.arrrspace.wtf'
@@ -74,7 +74,7 @@
           content: |
             server {
               listen 80;
-              server_name arrrspace.wtf;
+              server_name arrrspace.wtf arrrspace.test;
               location / {
                 proxy_pass http://{{CLUSTER_IP}}:31380;
               }
@@ -87,7 +87,7 @@
           content: |
             server {
               listen 80;
-              server_name api.arrrspace.wtf;
+              server_name api.arrrspace.wtf api.arrrspace.test;
               location / {
                 proxy_pass http://{{CLUSTER_IP}}:31337;
               }

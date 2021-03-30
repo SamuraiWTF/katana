@@ -3,7 +3,7 @@
 name: katana
 category: management
 description: A web UI for this application.
-href: http://katana.wtf
+href: http://katana.test
 
 install:
 
@@ -35,10 +35,15 @@ install:
 #        WantedBy=sockets.target
 #      mode: 0744
 
-  - name: Setup hosts file entries
+  - name: Setup hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   katana.wtf'
+
+  - name: Setup hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   katana.test'
 
   - name: Setup nginx reverse-proxy config
     copy:
@@ -46,7 +51,7 @@ install:
       content: |
         server {
           listen 80;
-          server_name katana.wtf;
+          server_name katana.wtf katana.test;
           location / {
             proxy_pass http://localhost:8087;
           }
@@ -71,10 +76,15 @@ remove:
       path: /etc/systemd/system/samurai-katana.socket
   - rm:
       path: /etc/nginx/conf.d/katana.conf
-  - name: Setup hosts file entries
+  - name: Remove hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   katana.wtf'
+      state: absent
+  - name: Remove hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   katana.test'
       state: absent
   - service:
       name: nginx

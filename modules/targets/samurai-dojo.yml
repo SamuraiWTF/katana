@@ -106,15 +106,25 @@ install:
         }
       mode: 0644
 
-  - name: Setup hosts file dojo-basic entry
+  - name: Setup hosts file dojo-basic entry (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-basic.wtf'
 
-  - name: Setup hosts file dojo-scavenger entry
+  - name: Setup hosts file dojo-basic entry (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.test'
+
+  - name: Setup hosts file dojo-scavenger entry (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-scavenger.wtf'
+
+  - name: Setup hosts file dojo-scavenger entry (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-scavenger.test'
 
   - service:
       name: nginx
@@ -142,6 +152,14 @@ remove:
   - lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-scavenger.wtf'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.test'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-scavenger.test'
       state: absent
   - docker:
       name: samuraidojo_basicphp

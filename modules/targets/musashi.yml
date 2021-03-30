@@ -52,10 +52,15 @@ install:
         USE_TLS=FALSE
       mode: 0744
 
-  - name: Setup hosts file entries
+  - name: Setup hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.8   cors-dojo.wtf'
+
+  - name: Setup hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   cors-dojo.test'
 
   - name: Setup nginx reverse-proxy config for CORS client
     copy:
@@ -63,17 +68,22 @@ install:
       content: |
         server {
           listen 80;
-          server_name cors-dojo.wtf;
+          server_name cors-dojo.wtf cors-dojo.test;
           location / {
             proxy_pass http://localhost:3021;
           }
         }
       mode: 0644
 
-  - name: Setup hosts file entries for api
+  - name: Setup hosts file entries for api (dem)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.9   api.cors.dem'
+
+  - name: Setup hosts file entries for api (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   api.cors.test'
 
   - name: Setup nginx reverse-proxy config for CORS API
     copy:
@@ -81,17 +91,22 @@ install:
       content: |
         server {
           listen 80;
-          server_name api.cors.dem;
+          server_name api.cors.dem api.cors.test;
           location / {
             proxy_pass http://localhost:3020;
           }
         }
       mode: 0644
 
-  - name: Setup hosts file entries
+  - name: Setup hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.8   csp-dojo.wtf'
+
+  - name: Setup hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   csp-dojo.test'
 
   - name: Setup nginx reverse-proxy config for CSP client
     copy:
@@ -99,7 +114,7 @@ install:
       content: |
         server {
           listen 80;
-          server_name csp-dojo.wtf;
+          server_name csp-dojo.wtf csp-dojo.test;
           location / {
             proxy_pass http://localhost:3041;
           }
@@ -107,10 +122,15 @@ install:
       mode: 0644
 
 
-  - name: Setup hosts file entries
+  - name: Setup hosts file entries (demo)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.8   jwt.demo'
+
+  - name: Setup hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   jwt.test'
 
   - name: Setup nginx reverse-proxy config for CORS client
     copy:
@@ -118,7 +138,7 @@ install:
       content: |
         server {
           listen 80;
-          server_name jwt.demo;
+          server_name jwt.demo jwt.test;
           location / {
             proxy_pass http://localhost:3050;
           }
@@ -163,7 +183,22 @@ remove:
       dest: /etc/hosts
       line: '127.0.0.8   jwt.demo'
       state: absent
-
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   cors-dojo.test'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   api.cors.test'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   csp-dojo.test'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.8   jwt.test'
+      state: absent
 
   - service:
       name: nginx
