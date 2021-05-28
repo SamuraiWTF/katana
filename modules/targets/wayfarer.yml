@@ -84,7 +84,6 @@ remove:
         - /etc/nginx/conf.d/wayfarer-ticket-app.conf
         - /etc/nginx/conf.d/wayfarer-ticket-api.conf
         - /opt/targets/wayfarer/.env
-
   - lineinfile:
       dest: /etc/hosts
       line: '127.0.0.9   wayfarer.wtf'
@@ -97,27 +96,25 @@ remove:
       dest: /etc/hosts
       line: '127.0.0.9   api.wayfarer.test'
       state: absent
-
   - service:
       name: nginx
       state: restarted
   - command:
       cmd: systemctl daemon-reload
 
-  start:
-    - command:
-        pwd: /opt/targets/wayfarer
-        cmd: bash deploy.sh
+start:
+  - command:
+      pwd: /opt/targets/wayfarer
+      cmd: bash deploy.sh
 
-  stop:
-    - command:
-        cmd: docker stack rm wayfarer
+stop:
+  - command:
+      cmd: docker stack rm wayfarer
 
-  status:
-    running:
-      started:
-        docker: wayfarer-db 
-
+status:
+  running:
+    started:
+      docker: wayfarer-db 
   installed:
     exists:
       path: /opt/targets/wayfarer
