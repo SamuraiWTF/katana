@@ -50,6 +50,7 @@ install:
 
         [Service]
         Type=oneshot
+        RemainAfterExit=yes
         ExecStart=/usr/local/bin/start_wayfarer.sh
         ExecStop=/usr/local/bin/stop_wayfarer.sh
 
