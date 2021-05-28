@@ -51,9 +51,9 @@ install:
         [Service]
         Type=oneshot
         RemainAfterExit=yes
+        User=samurai
         ExecStart=/usr/local/bin/start_wayfarer.sh
-        ExecStop=/usr/local/bin/stop_wayfarer.sh
-
+   
         [Install]
         WantedBy=multi-user.target
       mode: 0744
