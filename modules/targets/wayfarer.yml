@@ -116,13 +116,13 @@ install:
 
 remove:
   - service:
-      name: wtf-musashi
+      name: wtf-wayfarer
       state: stopped
   - rm:
       path:
         - /opt/targets/wayfarer
-        - /usr/local/bin/start_musashi.sh
-        - /etc/systemd/system/wtf-musashi.service
+        - /usr/local/bin/start_wayfarer.sh
+        - /etc/systemd/system/wtf-wayfarer.service
         - /etc/nginx/conf.d/wayfarer-ticket-app.conf
         - /etc/nginx/conf.d/wayfarer-ticket-api.conf
         - /opt/targets/wayfarer/.env
