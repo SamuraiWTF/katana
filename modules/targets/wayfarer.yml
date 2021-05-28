@@ -104,20 +104,20 @@ remove:
   - command:
       cmd: systemctl daemon-reload
 
+  start:
+    - command:
+        pwd: /opt/targets/wayfarer
+        cmd: bash deploy.sh
 
-start:
-  - command:
-      pwd: /opt/targets/wayfarer
-      cmd: bash deploy.sh
-
-stop:
-  - command:
-      cmd: docker stack rm wayfarer
+  stop:
+    - command:
+        cmd: docker stack rm wayfarer
 
   status:
     running:
       started:
         docker: wayfarer-db 
+
   installed:
     exists:
       path: /opt/targets/wayfarer
