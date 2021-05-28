@@ -41,6 +41,7 @@ install:
         cd /opt/targets/wayfarer
         ./deploy.sh
       mode: 0744
+      force: true
 
   - name: Setup hosts file entries (ticket app wtf)
     lineinfile:
