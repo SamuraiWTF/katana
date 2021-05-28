@@ -20,44 +20,6 @@ install:
     command:
       cmd: docker swarm init --advertise-addr eth0
 
-  - name: Script to start Wayfarer
-    copy:
-      dest: /usr/local/bin/start_wayfarer.sh
-      content: |
-        #!/bin/bash
-
-        cd /opt/targets/wayfarer
-        ./deploy.sh
-      mode: 0744
-
-  - name: Script to stop Wayfarer
-    copy:
-      dest: /usr/local/bin/stop_wayfarer.sh
-      content: |
-        #!/bin/bash
-
-        docker stack rm wayfarer
-      mode: 0744
-
-  - name: Create service descriptor for wtf-wayfarer.service
-    copy:
-      dest: /etc/systemd/system/wtf-wayfarer.service
-      content: |
-        [Unit]
-        Description=Wayfarer Target service
-        Requires=docker.service
-        After=docker.service
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        User=samurai
-        ExecStart=/usr/local/bin/start_wayfarer.sh
-   
-        [Install]
-        WantedBy=multi-user.target
-      mode: 0744
-
   - name: Generate wayfarer .env file
     copy:
       dest: /opt/targets/wayfarer/.env
@@ -115,14 +77,10 @@ install:
       cmd: systemctl daemon-reload
 
 remove:
-  - service:
-      name: wtf-wayfarer
-      state: stopped
   - rm:
       path:
         - /opt/targets/wayfarer
         - /usr/local/bin/start_wayfarer.sh
-        - /etc/systemd/system/wtf-wayfarer.service
         - /etc/nginx/conf.d/wayfarer-ticket-app.conf
         - /etc/nginx/conf.d/wayfarer-ticket-api.conf
         - /opt/targets/wayfarer/.env
@@ -148,19 +106,18 @@ remove:
 
 
 start:
-  - service:
-      name: wtf-wayfarer
-      state: running
+  - command:
+      pwd: /opt/targets/wayfarer
+      cmd: bash deploy.sh
 
 stop:
-  - service:
-      name: wtf-wayfarer
-      state: stopped
+  - command:
+      cmd: docker stack rm wayfarer
 
-status:
-  running:
-    started:
-      service: wtf-wayfarer
+  status:
+    running:
+      started:
+        docker: wayfarer-db 
   installed:
     exists:
       path: /opt/targets/wayfarer
