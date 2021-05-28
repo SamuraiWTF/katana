@@ -31,6 +31,7 @@ install:
         API_CORS_POLICY=^https?\:\/\/wayfarer\.
         USE_TLS=FALSE
       mode: 0744
+      force: true
 
   - name: Script to start Wayfarer
     copy:
@@ -41,7 +42,6 @@ install:
         cd /opt/targets/wayfarer
         ./deploy.sh
       mode: 0744
-      force: true
 
   - name: Setup hosts file entries (ticket app wtf)
     lineinfile:
