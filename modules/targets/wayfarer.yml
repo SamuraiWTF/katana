@@ -29,6 +29,16 @@ install:
         USE_TLS=FALSE
       mode: 0744
 
+  - name: Script to start Wayfarer
+    copy:
+      dest: /usr/local/bin/start_wayfarer.sh
+      content: |
+        #!/bin/bash
+
+        cd /opt/targets/wayfarer
+        deploy.sh
+      mode: 0744
+
   - name: Setup hosts file entries (ticket app wtf)
     lineinfile:
       dest: /etc/hosts
@@ -104,8 +114,7 @@ remove:
 
 start:
   - command:
-      pwd: /opt/targets/wayfarer
-      cmd: /opt/targets/wayfarer/deploy.sh
+      cmd: /usr/local/bin/start_wayfarer.sh
 
 stop:
   - command:
