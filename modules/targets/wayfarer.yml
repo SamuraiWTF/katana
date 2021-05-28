@@ -1,0 +1,165 @@
+---
+
+name: wayfarer
+category: targets
+description: A modern react/express app for app security labs.
+href: http://wayfarer.test
+
+install:
+  - name: Get the latest release of wayfarer
+    git:
+      repo: https://github.com/SamuraiWTF/wayfarer.git
+      dest: /opt/targets/wayfarer
+
+  - name: Build the docker images
+    command: 
+      cwd: /opt/targets/wayfarer
+      cmd: ./build.sh
+
+  - name: Initialize Docker Swarm
+    command:
+      cmd: docker swarm init --advertise-addr eth0
+
+  - name: Script to start Wayfarer
+    copy:
+      dest: /usr/local/bin/start_wayfarer.sh
+      content: |
+        #!/bin/bash
+
+        cd /opt/targets/wayfarer
+        ./deploy.sh
+      mode: 0744
+
+  - name: Script to stop Wayfarer
+    copy:
+      dest: /usr/local/bin/stop_wayfarer.sh
+      content: |
+        #!/bin/bash
+
+        docker stack rm wayfarer
+      mode: 0744
+
+  - name: Create service descriptor for wtf-wayfarer.service
+    copy:
+      dest: /etc/systemd/system/wtf-wayfarer.service
+      content: |
+        [Unit]
+        Description=Wayfarer Target service
+        Requires=docker.service
+        After=docker.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/start_wayfarer.sh
+        ExecStop=/usr/local/bin/stop_wayfarer.sh
+
+        [Install]
+        WantedBy=multi-user.target
+      mode: 0744
+
+  - name: Generate wayfarer .env file
+    copy:
+      dest: /opt/targets/wayfarer/.env
+      content: |
+        CORS_API_PORT=3020
+        CORS_API_HOST=api.cors.dem
+        USE_TLS=FALSE
+      mode: 0744
+
+  - name: Setup hosts file entries (ticket app wtf)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   wayfarer.wtf'
+
+  - name: Setup hosts file entries (ticket app test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   wayfarer.test'
+
+  - name: Setup nginx reverse-proxy config for app
+    copy:
+      dest: /etc/nginx/conf.d/wayfarer-ticket-app.conf
+      content: |
+        server {
+          listen 80;
+          server_name wayfarer.wtf wayfarer.test;
+          location / {
+            proxy_pass http://localhost:7000;
+          }
+        }
+      mode: 0644
+
+  - name: Setup hosts file entries for api (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   api.wayfarer.test'
+
+  - name: Setup nginx reverse-proxy config for ticket API
+    copy:
+      dest: /etc/nginx/conf.d/wayfarer-ticket-api.conf
+      content: |
+        server {
+          listen 80;
+          server_name api.wayfarer.test;
+          location / {
+            proxy_pass http://localhost:7001;
+          }
+        }
+      mode: 0644
+
+  - service:
+      name: nginx
+      state: restarted
+  - command:
+      cmd: systemctl daemon-reload
+
+remove:
+  - service:
+      name: wtf-musashi
+      state: stopped
+  - rm:
+      path:
+        - /opt/targets/wayfarer
+        - /usr/local/bin/start_musashi.sh
+        - /etc/systemd/system/wtf-musashi.service
+        - /etc/nginx/conf.d/wayfarer-ticket-app.conf
+        - /etc/nginx/conf.d/wayfarer-ticket-api.conf
+        - /opt/targets/wayfarer/.env
+
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   wayfarer.wtf'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   wayfarer.test'
+      state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   api.wayfarer.test'
+      state: absent
+
+  - service:
+      name: nginx
+      state: restarted
+  - command:
+      cmd: systemctl daemon-reload
+
+
+start:
+  - service:
+      name: wtf-wayfarer
+      state: running
+
+stop:
+  - service:
+      name: wtf-wayfarer
+      state: stopped
+
+status:
+  running:
+    started:
+      service: wtf-wayfarer
+  installed:
+    exists:
+      path: /opt/targets/wayfarer
