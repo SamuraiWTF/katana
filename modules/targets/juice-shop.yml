@@ -50,9 +50,13 @@ install:
     command:
       cmd: mkcert -install
 
+  - name: Create nginx certs directory
+      cwd: /etc/nginx
+      cmd: mkdir certs
+
   - name: Generate SSL certs with mkcert
     command:
-      cwd: /etc/nginx/conf.d
+      cwd: /etc/nginx/certs
       cmd: mkcert juice-shop.wtf juice-shop.test
 
   - name: Setup nginx reverse-proxy config
@@ -65,6 +69,15 @@ install:
           location / {
             proxy_pass http://localhost:3000;
           }
+        }
+        server {
+          listen 443 ssl;
+          server_name juice-shop.wtf juice-shop.test;
+          location / {
+            proxy_pass http://localhost:3000;
+          }
+          ssl_certficate certs/juice-shop.wtf+1.pem
+          ssl_certificate_key certs/juice-shop.wtf+1-key.pem
         }
       mode: 0644
 
