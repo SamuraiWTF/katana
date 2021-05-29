@@ -51,6 +51,7 @@ install:
       cmd: mkcert -install
 
   - name: Create nginx certs directory
+    command:
       cwd: /etc/nginx
       cmd: mkdir certs
 
