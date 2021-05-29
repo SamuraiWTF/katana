@@ -77,8 +77,8 @@ install:
           location / {
             proxy_pass http://localhost:3000;
           }
-          ssl_certficate certs/juice-shop.wtf+1.pem
-          ssl_certificate_key certs/juice-shop.wtf+1-key.pem
+          ssl_certficate certs/juice-shop.wtf+1.pem;
+          ssl_certificate_key certs/juice-shop.wtf+1-key.pem;
         }
       mode: 0644
 
