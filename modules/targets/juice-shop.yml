@@ -46,6 +46,14 @@ install:
       dest: /etc/hosts
       line: '127.0.0.1   juice-shop.test'
 
+  - name: Install mkcert root ca
+    command:
+      cmd: mkcert -install
+
+  - name: Generate SSL certs with mkcert
+    command:
+      cmd: cd /etc/nginx/conf.d && mkcert juice-shop.wtf juice-shop.test
+
   - name: Setup nginx reverse-proxy config
     copy:
       dest: /etc/nginx/conf.d/juice-shop.conf
