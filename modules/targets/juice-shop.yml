@@ -52,7 +52,8 @@ install:
 
   - name: Generate SSL certs with mkcert
     command:
-      cmd: cd /etc/nginx/conf.d && mkcert juice-shop.wtf juice-shop.test
+      cwd: /etc/nginx/conf.d
+      cmd: mkcert juice-shop.wtf juice-shop.test
 
   - name: Setup nginx reverse-proxy config
     copy:
