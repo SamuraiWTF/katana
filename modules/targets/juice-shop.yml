@@ -50,11 +50,11 @@ install:
     copy:
       dest: /tmp/setup_juiceshop_ssl.ssh
       content: |
-      #!/bin/bash
-      export CAROOT=/opt/samurai/mkcert
-      mkcert -install
-      cd /etc/nginx/certs
-      mkcert juice-shop.wtf juice-shop.test
+        #!/bin/bash
+        export CAROOT=/opt/samurai/mkcert
+        mkcert -install
+        cd /etc/nginx/certs
+        mkcert juice-shop.wtf juice-shop.test
 
   - name: Execute SSL setup
     command:
