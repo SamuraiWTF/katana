@@ -48,7 +48,7 @@ install:
 
   - name: Create SSL setup script
     copy:
-      dest: /tmp/setup_juiceshop_ssl.ssh
+      dest: /tmp/setup_juiceshop_ssl.sh
       content: |
         #!/bin/bash
         export CAROOT=/opt/samurai/mkcert
