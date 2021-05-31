@@ -46,19 +46,23 @@ install:
       dest: /etc/hosts
       line: '127.0.0.1   juice-shop.test'
 
-  - name: Install mkcert root ca
-    command:
-      cmd: mkcert -install
+  - name: Create SSL setup script
+    copy:
+      dest: /tmp/setup_juiceshop_ssl.ssh
+      content: |
+      #!/bin/bash
+      export CAROOT=/opt/samurai/mkcert
+      mkcert -install
+      cd /etc/nginx/certs
+      mkcert juice-shop.wtf juice-shop.test
 
-  - name: Create nginx certs directory
+  - name: Execute SSL setup
     command:
-      cwd: /etc/nginx
-      cmd: mkdir certs
+      cmd: bash /tmp/setup_juiceshop_ssl.sh
 
-  - name: Generate SSL certs with mkcert
+  - name: Cleanup SSL script
     command:
-      cwd: /etc/nginx/certs
-      cmd: mkcert juice-shop.wtf juice-shop.test
+      cmd: rm /tmp/setup_juiceshop_ssl.sh
 
   - name: Setup nginx reverse-proxy config
     copy:
@@ -77,7 +81,7 @@ install:
           location / {
             proxy_pass http://localhost:3000;
           }
-          ssl_certficate certs/juice-shop.wtf+1.pem;
+          ssl_certificate certs/juice-shop.wtf+1.pem;
           ssl_certificate_key certs/juice-shop.wtf+1-key.pem;
         }
       mode: 0644
@@ -100,6 +104,10 @@ remove:
       path: /etc/systemd/system/wtf-juice-shop.service
   - rm:
       path: /etc/nginx/conf.d/juice-shop.conf
+  - rm:
+      path: /etc/nginx/certs/juice-shop.wtf+1.pem
+  - rm:
+      path: /etc/nginx/certs/juice-shop.wtf+1-key.pem
   - name: Remove hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
