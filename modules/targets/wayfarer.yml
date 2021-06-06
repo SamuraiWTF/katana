@@ -43,6 +43,24 @@ install:
         ./deploy.sh
       mode: 0744
 
+  - name: Create SSL setup script
+    copy:
+      dest: /tmp/setup_wayfarer_ssl.sh
+      content: |
+        #!/bin/bash
+        export CAROOT=/opt/samurai/mkcert
+        mkcert -install
+        cd /etc/nginx/certs
+        mkcert wayfarer.wtf wayfarer.test api.wayfarer.wtf api.wayfarer.test
+
+  - name: Execute SSL setup
+    command:
+      cmd: bash /tmp/setup_wayfarer_ssl.sh
+
+  - name: Cleanup SSL script
+    command:
+      cmd: rm /tmp/setup_wayfarer_ssl.sh
+
   - name: Setup hosts file entries (ticket app wtf)
     lineinfile:
       dest: /etc/hosts
@@ -64,6 +82,15 @@ install:
             proxy_pass http://localhost:7000;
           }
         }
+        server {
+          listen 443 ssl;
+          server_name wayfarer.wtf wayfarer.test;
+          location / {
+            proxy_pass http://localhost:7000;
+          }
+          ssl_certificate certs/wayfarer.wtf+3.pem;
+          ssl_certificate_key certs/wayfarer.wtf+3-key.pem;
+        }
       mode: 0644
 
   - name: Setup hosts file entries for api (test)
@@ -81,6 +108,15 @@ install:
           location / {
             proxy_pass http://localhost:7001;
           }
+        }
+        server {
+          listen 443 ssl;
+          server_name api.wayfarer.test;
+          location / {
+            proxy_pass http://localhost:7001;
+          }
+          ssl_certificate certs/wayfarer.wtf+3.pem;
+          ssl_certificate_key certs/wayfarer.wtf+3-key.pem;
         }
       mode: 0644
 
