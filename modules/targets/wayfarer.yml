@@ -24,7 +24,7 @@ install:
     copy:
       dest: /opt/targets/wayfarer/.env
       content: |
-        REACT_APP_API_ORIGIN=http://api.wayfarer.test
+        REACT_APP_API_ORIGIN=//api.wayfarer.test
         API_PUBLIC_PORT=7001
         APP_PORT=7000
         API_CORS_TYPE=regex
