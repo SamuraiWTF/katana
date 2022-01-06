@@ -8,7 +8,7 @@ href: http://juice-shop.test
 install:
   - name: Get the latest release page of Juice Shop
     get_url:
-      url: https://github.com/bkimminich/juice-shop/releases/latest
+      url: https://github.com/juice-shop/juice-shop/releases/latest
       dest: /opt/targets/juice-shop
       link_pattern: \/bkimminich\/juice-shop\/releases\/download\/.*_node12_linux_x64.tgz
 
