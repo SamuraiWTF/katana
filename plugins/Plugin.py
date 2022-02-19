@@ -1,4 +1,6 @@
 import katanaerrors
+import subprocess
+import shlex
 
 
 class Plugin(object):
@@ -7,6 +9,11 @@ class Plugin(object):
         for key in required_params:
             if params is None or key not in params.keys():
                 raise katanaerrors.MissingRequiredParam(key, plugin_name)
+
+    def _run_command(self, cmd, shell=None, unsafe=None, cwd=None):
+        if not unsafe:
+            cmd = shlex.split(cmd)
+        return subprocess.run(cmd, shell=shell, cwd=cwd)
 
     @classmethod
     def get_aliases(cls):

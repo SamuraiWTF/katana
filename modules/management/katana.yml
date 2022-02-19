@@ -46,17 +46,22 @@ install:
       line: '127.0.0.1   katana.test'
 
   - name: Setup nginx reverse-proxy config
-    copy:
-      dest: /etc/nginx/conf.d/katana.conf
-      content: |
-        server {
-          listen 80;
-          server_name katana.wtf katana.test;
-          location / {
-            proxy_pass http://localhost:8087;
-          }
-        }
-      mode: 0644
+    reverseproxy:
+      hostname: 'katana.test'
+      proxy_pass: 'http://localhost:8087'
+
+#  - name: Setup nginx reverse-proxy config
+#    copy:
+#      dest: /etc/nginx/conf.d/katana.conf
+#      content: |
+#        server {
+#          listen 80;
+#          server_name katana.wtf katana.test;
+#          location / {
+#            proxy_pass http://localhost:8087;
+#          }
+#        }
+#      mode: 0644
 
   - service:
       name: nginx
