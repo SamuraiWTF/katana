@@ -79,8 +79,9 @@ remove:
       path: /etc/systemd/system/samurai-katana.service
   - rm:
       path: /etc/systemd/system/samurai-katana.socket
-  - rm:
-      path: /etc/nginx/conf.d/katana.conf
+  - name: Remove nginx reverse proxy and certificate config
+    reverseproxy:
+      hostname: 'katana.test'
   - name: Remove hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts

@@ -72,3 +72,21 @@ class ReverseProxy(Plugin):
         os.chmod('/etc/nginx/conf.d/{hostname}.conf'.format(hostname=hostname), 644)
 
         return True, None
+
+    def remove(self, params):
+        self._validate_params(params, ['hostname'], 'reverseproxy')
+        hostname = params.get('hostname')
+        # ['key', 'csr', 'crt', 'ext']:
+        files_to_remove = [
+            '/etc/samurai.d/certs/{hostname}.key',
+            '/etc/samurai.d/certs/{hostname}.csr',
+            '/etc/samurai.d/certs/{hostname}.crt',
+            '/etc/samurai.d/certs/{hostname}.ext',
+            '/etc/nginx/conf.d/{hostname}.conf'
+        ]
+
+        for path in files_to_remove:
+            if os.path.exists(path.format(hostname=hostname)):
+                os.remove(path.format(hostname=hostname))
+        return True, None
+
