@@ -8,6 +8,8 @@ To avoid conflict with other tools and targets, any new modules should run on lo
 |   *Port* | *Module*             |
 |---------:|----------------------|
 | 0 - 1023 | System ports*        |
+|     7000 | Wayfarer             |
+|     7001 | Wayfarer (API)       |
 |     8087 | Katana UI            |    
 |     8443 | SamuraiWTF TLS Port* |
 
