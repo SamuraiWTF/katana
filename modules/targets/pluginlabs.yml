@@ -1,0 +1,20 @@
+---
+
+name: plugin-labs
+class: provisioners.DockerProvisioner
+category: targets
+description: Test lab focused on scenarios that require custom plugins or scripts to solve.
+source:
+  git-repo: https://github.com/SamuraiWTF/plugin-labs.git
+destination: /opt/targets/plugin-labs
+container:
+  name: plugin-labs
+  ports:
+  - host: 33180
+    guest: 3000
+hosting:
+  domain: plugin-labs.wtf
+  http:
+    listen: 80
+    proxy-pass: http://localhost:33180
+

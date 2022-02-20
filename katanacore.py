@@ -138,5 +138,3 @@ def load_locked_modules():
             locked_modules.clear()
         lock_file_read = True
         return locked_modules
-
-
