@@ -5,12 +5,14 @@ Samurai Modules are the tools and targets that can be installed and used on the 
 ## Assigned Ports
 To avoid conflict with other tools and targets, any new modules should run on local ports that have not been assigned to other modules.
 
-|   *Port* | *Module*             |
-|---------:|----------------------|
-| 0 - 1023 | System ports*        |
-|     7000 | Wayfarer             |
-|     7001 | Wayfarer (API)       |
-|     8087 | Katana UI            |    
-|     8443 | SamuraiWTF TLS Port* |
+|   *Port* | *Module*      | *Purpose*                         |
+|---------:|---------------|-----------------------------------|
+| 0 - 1023 | none          | Ports reserved by the host system |
+|     7000 | wayfarer      | application                       |
+|     7001 | wayfarer      | api                               |
+|     8087 | katana        | katana UI                         |    
+|     8443 | none          | SamuraiWTF TLS Port               |
+|    30080 | samurai-dojo  | dojo-basic                        |
+|    30081 | samurai-dojo  | dojo-scavenger                    |
 
 *Ports reserved by the host system
