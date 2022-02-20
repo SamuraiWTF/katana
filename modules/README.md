@@ -13,6 +13,6 @@ To avoid conflict with other tools and targets, any new modules should run on lo
 |     8087 | katana        | katana UI                         |    
 |     8443 | none          | SamuraiWTF TLS Port               |
 |    30080 | samurai-dojo  | dojo-basic                        |
-|    30081 | samurai-dojo  | dojo-scavenger                    |
+|    31080 | samurai-dojo  | dojo-scavenger                    |
 
 *Ports reserved by the host system

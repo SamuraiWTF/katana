@@ -81,45 +81,19 @@ install:
       mode: 0744
 
   - name: Create dojo-basic nginx config
-    copy:
-      dest: /etc/nginx/conf.d/dojo-basic.conf
-      content: |
-        server {
-          listen 80;
-          server_name dojo-basic.wtf;
-          location / {
-            proxy_pass http://localhost:30080;
-          }
-        }
-      mode: 0644
+    reverseproxy:
+      hostname: 'dojo-basic.test'
+      proxy_pass: 'http://localhost:30080'
 
   - name: Create dojo-scavenger nginx config
-    copy:
-      dest: /etc/nginx/conf.d/dojo-scavenger.conf
-      content: |
-        server {
-          listen 80;
-          server_name dojo-scavenger.wtf;
-          location / {
-            proxy_pass http://localhost:31080;
-          }
-        }
-      mode: 0644
-
-  - name: Setup hosts file dojo-basic entry (wtf)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.1   dojo-basic.wtf'
+    reverseproxy:
+      hostname: 'dojo-scavenger.test'
+      proxy_pass: 'http://localhost:31080'
 
   - name: Setup hosts file dojo-basic entry (test)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-basic.test'
-
-  - name: Setup hosts file dojo-scavenger entry (wtf)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.1   dojo-scavenger.wtf'
 
   - name: Setup hosts file dojo-scavenger entry (test)
     lineinfile:
@@ -141,10 +115,12 @@ remove:
       path: /opt/targets/samuraidojo
   - rm:
       path: /etc/systemd/system/wtf-dojo.service
-  - rm:
-      path: /etc/nginx/conf.d/dojo-basic.conf
-  - rm:
-      path: /etc/nginx/conf.d/dojo-scavenger.conf
+  - name: Remove reverse proxy config for dojo-basic
+    reverseproxy:
+      hostname: 'dojo-basic.test'
+  - name: Remove reverse proxy config for dojo-scavenger
+    reverseproxy:
+      hostname: 'dojo-scavenger.test'
   - lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-basic.wtf'
