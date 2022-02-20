@@ -3,7 +3,7 @@
 name: juice-shop
 category: targets
 description: A rich-featured modern vulnerable app from OWASP, featuring a built-in CTF.
-href: http://juice-shop.test
+href: https://juice-shop.test:8443
 
 install:
   - name: Get the latest release page of Juice Shop
@@ -64,27 +64,10 @@ install:
     command:
       cmd: rm /tmp/setup_juiceshop_ssl.sh
 
-  - name: Setup nginx reverse-proxy config
-    copy:
-      dest: /etc/nginx/conf.d/juice-shop.conf
-      content: |
-        server {
-          listen 80;
-          server_name juice-shop.wtf juice-shop.test;
-          location / {
-            proxy_pass http://localhost:3000;
-          }
-        }
-        server {
-          listen 443 ssl;
-          server_name juice-shop.wtf juice-shop.test;
-          location / {
-            proxy_pass http://localhost:3000;
-          }
-          ssl_certificate certs/juice-shop.wtf+1.pem;
-          ssl_certificate_key certs/juice-shop.wtf+1-key.pem;
-        }
-      mode: 0644
+  - name: Create juice-shop nginx config
+    reverseproxy:
+      hostname: 'juice-shop.test'
+      proxy_pass: 'http://localhost:3000'
 
   - service:
       name: nginx
@@ -97,17 +80,13 @@ remove:
       name: wtf-juice-shop
       state: stopped
   - rm:
-      path: /opt/targets/juice-shop
-  - rm:
-      path: /usr/local/bin/start_juice-shop.sh
-  - rm:
-      path: /etc/systemd/system/wtf-juice-shop.service
-  - rm:
-      path: /etc/nginx/conf.d/juice-shop.conf
-  - rm:
-      path: /etc/nginx/certs/juice-shop.wtf+1.pem
-  - rm:
-      path: /etc/nginx/certs/juice-shop.wtf+1-key.pem
+      path:
+        - /opt/targets/juice-shop
+        - /usr/local/bin/start_juice-shop.sh
+        - /etc/systemd/system/wtf-juice-shop.service
+  - name: Remove juice-shop nginx config
+    reverseproxy:
+      hostname: 'juice-shop.test'
   - name: Remove hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
