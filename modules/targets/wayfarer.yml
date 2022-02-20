@@ -3,7 +3,7 @@
 name: wayfarer
 category: targets
 description: A modern react/express app for app security labs.
-href: http://wayfarer.test
+href: https://wayfarer.test:8443
 
 install:
   - name: Get the latest release of wayfarer

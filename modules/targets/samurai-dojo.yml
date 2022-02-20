@@ -3,7 +3,7 @@
 name: samurai-dojo
 category: targets
 description: A basic set of classic apps called dojo-basic and dojo-scavenger.
-href: http://dojo-basic.wtf
+href: https://dojo-basic.test:8443
 
 install:
   - name: Turn off docker so we can update DNS if needed
