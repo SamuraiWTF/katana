@@ -19,6 +19,8 @@ To avoid conflict with other tools and targets, any new modules should run on lo
 |     8443 | none         | SamuraiWTF TLS Port               |
 |    30080 | samurai-dojo | dojo-basic                        |
 |    30081 | mutillidae   | application                       |
+|    31000 | dvwa         | application                       |
 |    31080 | samurai-dojo | dojo-scavenger                    |
+|    33006 | dvwa         |                                   |
 
 *Ports reserved by the host system

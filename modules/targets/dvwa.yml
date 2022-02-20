@@ -3,7 +3,7 @@
 name: dvwa
 category: targets
 description: A classic test lab focused on OWASP top 10 vulnerabilities.
-href: http://dvwa.test
+href: https://dvwa.test:8443
 
 install:
   - name: Make sure docker service is running
@@ -19,28 +19,15 @@ install:
         80/tcp: 31000
         3306/tcp: 33006
 
-  - name: Setup hosts file entries (wtf)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.1   dvwa.wtf'
-
-  - name: Setup hosts file entries (test)
+  - name: Setup hosts file entries
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dvwa.test'
 
   - name: Setup nginx reverse-proxy config
-    copy:
-      dest: /etc/nginx/conf.d/dvwa.conf
-      content: |
-        server {
-          listen 80;
-          server_name dvwa.wtf dvwa.test;
-          location / {
-            proxy_pass http://localhost:31000;
-          }
-        }
-      mode: 0744
+    reverseproxy:
+      hostname: 'dvwa.test'
+      proxy_pass: 'http://localhost:31000'
 
   - service:
       name: nginx
@@ -52,18 +39,16 @@ remove:
       state: running
   - docker:
       name: dvwa
-  - name: Remove hosts file entry (wtf)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.1   dvwa.wtf'
-      state: absent
+
   - name: Remove hosts file entry (test)
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dvwa.test'
       state: absent
-  - rm:
-      path: /etc/nginx/conf.d/dvwa.conf
+
+  - name: Remove nginx reverse-proxy config
+    reverseproxy:
+      hostname: 'dvwa.test'
 
 start:
   - service:
