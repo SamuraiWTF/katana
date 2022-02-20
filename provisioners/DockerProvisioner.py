@@ -11,7 +11,7 @@ class DockerProvisioner(DefaultProvisioner.DefaultProvisioner):
     def get_dependencies(self):
         return
 
-    def install(self):
+    def install(self, step=False):
         if katanacore.status_module('docker') == 'not installed':
             katanacore.install_module('docker')
         if katanacore.status_module('docker') != 'running':
@@ -72,7 +72,7 @@ class DockerProvisioner(DefaultProvisioner.DefaultProvisioner):
         for task in func:
             self._run_task(task, "install")
 
-    def remove(self):
+    def remove(self, step=False):
         if katanacore.status_module('docker') != 'running':
             katanacore.start_module('docker')
         func = [
@@ -101,12 +101,12 @@ class DockerProvisioner(DefaultProvisioner.DefaultProvisioner):
         for task in func:
             self._run_task(task, "remove")
 
-    def start(self):
+    def start(self, step=False):
         if katanacore.status_module('docker') != 'running':
             katanacore.start_module('docker')
         self._run_task({'docker': {'name': self.module_info.get('container').get('name')}}, 'start')
 
-    def stop(self):
+    def stop(self, step=False):
         if katanacore.status_module('docker') != 'running':
             katanacore.start_module('docker')
         self._run_task({'docker': {'name': self.module_info.get('container').get('name')}}, 'stop')

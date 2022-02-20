@@ -12,11 +12,11 @@ def list_modules(args):
 
 
 def install_module(args):
-    katanacore.install_module(args.name)
+    katanacore.install_module(args.name, ((args.step is not None) and args.step))
 
 
 def remove_module(args):
-    katanacore.remove_module(args.name)
+    katanacore.remove_module(args.name, ((args.step is not None) and args.step))
 
 
 def start_module(args):
@@ -49,10 +49,12 @@ if __name__ == "__main__":
 
     install = subparsers.add_parser('install')
     install.add_argument('name')
+    install.add_argument('--step', action='store_true')
     install.set_defaults(func=install_module)
 
     remove = subparsers.add_parser('remove')
     remove.add_argument('name')
+    remove.add_argument('--step', action='store_true')
     remove.set_defaults(func=remove_module)
 
     start = subparsers.add_parser('start')

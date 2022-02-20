@@ -12,22 +12,22 @@ class DefaultProvisioner(BaseProvisioner.BaseProvisioner):
             if a in module_info:
                 self.action_list.append(a)
 
-    def install(self):
+    def install(self, step=False):
         for dependency in self.get_dependencies():
             if katanacore.status_module(dependency) == 'not installed':
                 katanacore.install_module(dependency)
-        self._run_function("install")
+        self._run_function("install", step)
 
-    def remove(self):
-        self._run_function("remove")
+    def remove(self, step=False):
+        self._run_function("remove", step)
 
-    def start(self):
+    def start(self, step=False):
         for dependency in self.get_dependencies():
             if katanacore.status_module(dependency) != 'running':
                 katanacore.start_module(dependency)
         self._run_function("start")
 
-    def stop(self):
+    def stop(self, step=False):
         self._run_function("stop")
 
     def has_actions(self, is_locked=False):
@@ -37,7 +37,7 @@ class DefaultProvisioner(BaseProvisioner.BaseProvisioner):
         else:
             return self.action_list
 
-    def _run_function(self, func_name):
+    def _run_function(self, func_name, step=False):
         func = self.module_info.get(func_name)
         if func is None:
             raise katanaerrors.NotImplemented(func_name, "DefaultProvisioner", self.get_name())
@@ -47,6 +47,8 @@ class DefaultProvisioner(BaseProvisioner.BaseProvisioner):
             print("Running '{}' tasks for module '{}'...".format(func_name, self.get_name()))
             for task in func:
                 self._run_task(task, func_name)
+                if step:
+                    input("Enter to continue...")
 
     def _run_task(self, task, func):
         task_type = None
@@ -77,7 +79,7 @@ class DefaultProvisioner(BaseProvisioner.BaseProvisioner):
         else:
             raise katanaerrors.MissingFunction(func, task_type)
 
-    def status(self):
+    def status(self, step=False):
         """Determine the current status of the module tied to this provisioner.
 
         :return: str representing the module status as one of ['not installed', 'installed', 'running', 'stopped']

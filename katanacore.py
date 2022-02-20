@@ -58,7 +58,7 @@ def get_module_info(name):
     return module_dict.get(name)
 
 
-def _run_function(module_name, function_name):
+def _run_function(module_name, function_name, step=False):
     if len(module_dict) == 0:
         list_modules()
 
@@ -68,17 +68,17 @@ def _run_function(module_name, function_name):
 
     if hasattr(provisioner, function_name) and callable(getattr(provisioner, function_name)):
         function_to_call = getattr(provisioner, function_name)
-        return function_to_call()
+        return function_to_call(step)
     else:
         raise katanaerrors.NotImplemented(function_name, type(provisioner).__name__)
 
 
-def install_module(name):
-    _run_function(name, "install")
+def install_module(name, step):
+    _run_function(name, "install", step)
 
 
-def remove_module(name):
-    _run_function(name, "remove")
+def remove_module(name, step):
+    _run_function(name, "remove", step)
 
 
 def start_module(name):
