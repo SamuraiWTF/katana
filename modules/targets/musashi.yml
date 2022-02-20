@@ -3,7 +3,7 @@
 name: musashi
 category: targets
 description: A set of labs for understanding modern application features.
-href: http://cors-dojo.wtf
+href: https://cors-dojo.test:8443
 
 install:
   - name: Get the latest release of musashi
@@ -52,99 +52,45 @@ install:
         USE_TLS=FALSE
       mode: 0744
 
-  - name: Setup hosts file entries (wtf)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   cors-dojo.wtf'
-
-  - name: Setup hosts file entries (test)
+  - name: Setup hosts file entry for cors-dojo
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.8   cors-dojo.test'
 
-  - name: Setup nginx reverse-proxy config for CORS client
-    copy:
-      dest: /etc/nginx/conf.d/musashi-cors-client.conf
-      content: |
-        server {
-          listen 80;
-          server_name cors-dojo.wtf cors-dojo.test;
-          location / {
-            proxy_pass http://localhost:3021;
-          }
-        }
-      mode: 0644
-
-  - name: Setup hosts file entries for api (dem)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.9   api.cors.dem'
-
-  - name: Setup hosts file entries for api (test)
+  - name: Setup hosts file entries for api.cors
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.9   api.cors.test'
 
-  - name: Setup nginx reverse-proxy config for CORS API
-    copy:
-      dest: /etc/nginx/conf.d/musashi-cors-api.conf
-      content: |
-        server {
-          listen 80;
-          server_name api.cors.dem api.cors.test;
-          location / {
-            proxy_pass http://localhost:3020;
-          }
-        }
-      mode: 0644
-
-  - name: Setup hosts file entries (wtf)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   csp-dojo.wtf'
-
-  - name: Setup hosts file entries (test)
+  - name: Setup hosts file entry for csp-dojo
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.8   csp-dojo.test'
 
-  - name: Setup nginx reverse-proxy config for CSP client
-    copy:
-      dest: /etc/nginx/conf.d/musashi-csp-client.conf
-      content: |
-        server {
-          listen 80;
-          server_name csp-dojo.wtf csp-dojo.test;
-          location / {
-            proxy_pass http://localhost:3041;
-          }
-        }
-      mode: 0644
-
-
-  - name: Setup hosts file entries (demo)
+  - name: Setup hosts file entry for jwt-demo
     lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.8   jwt.demo'
-
-  - name: Setup hosts file entries (test)
-    lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   jwt.test'
+      line: '127.0.0.8   jwt-demo.test'
 
   - name: Setup nginx reverse-proxy config for CORS client
-    copy:
-      dest: /etc/nginx/conf.d/jwt-demo.conf
-      content: |
-        server {
-          listen 80;
-          server_name jwt.demo jwt.test;
-          location / {
-            proxy_pass http://localhost:3050;
-          }
-        }
-      mode: 0644
+    reverseproxy:
+      hostname: 'cors-dojo.test'
+      proxy_pass: 'http://localhost:3021'
 
+  - name: Setup nginx reverse-proxy config for CORS API
+    reverseproxy:
+      hostname: 'api.cors.test'
+      proxy_pass: 'http://localhost:3020'
+
+  - name: Setup nginx reverse-proxy config for CSP dojo
+    reverseproxy:
+      hostname: 'csp-dojo.test'
+      proxy_pass: 'http://localhost:3041'
+
+  - name: Setup nginx reverse-proxy config for JWT demo
+    reverseproxy:
+      hostname: 'jwt-demo.test'
+      proxy_pass: 'http://localhost:3050'
 
   - service:
       name: nginx
@@ -161,28 +107,8 @@ remove:
         - /opt/targets/musashi
         - /usr/local/bin/start_musashi.sh
         - /etc/systemd/system/wtf-musashi.service
-        - /etc/nginx/conf.d/musashi-cors-client.conf
-        - /etc/nginx/conf.d/musashi-cors-api.conf
-        - /etc/nginx/conf.d/musashi-csp.conf
-        - /etc/nginx/conf.d/jwt-demo.conf
         - /opt/targets/musashi/.env
 
-  - lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   cors-dojo.wtf'
-      state: absent
-  - lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   api.cors.dem'
-      state: absent
-  - lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   csp-dojo.wtf'
-      state: absent
-  - lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   jwt.demo'
-      state: absent
   - lineinfile:
       dest: /etc/hosts
       line: '127.0.0.8   cors-dojo.test'
@@ -197,8 +123,21 @@ remove:
       state: absent
   - lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.8   jwt.test'
+      line: '127.0.0.8   jwt-demo.test'
       state: absent
+
+  - name: Remove nginx reverse-proxy config for CORS client
+    reverseproxy:
+      hostname: 'cors-dojo.test'
+  - name: Remove nginx reverse-proxy config for CORS API
+    reverseproxy:
+      hostname: 'api.cors.test'
+  - name: Remove nginx reverse-proxy config for CSP dojo
+    reverseproxy:
+      hostname: 'csp-dojo.test'
+  - name: Remove nginx reverse-proxy config for JWT demo
+    reverseproxy:
+      hostname: 'jwt-demo.test'
 
   - service:
       name: nginx
