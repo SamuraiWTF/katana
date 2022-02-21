@@ -9,13 +9,45 @@ install:
   - service:
       name: docker
       state: running
-  - docker:
-      name: mutillidae
-      image: bit0pus/docker-mutillidae
-      ports:
-        80/tcp: 33081
-        22/tcp: 22222
-        3306/tcp: 33333
+
+  - name: Fetch mutillidae dockerhub project
+    git:
+      repo: https://github.com/webpwnized/mutillidae-dockerhub.git
+      dest: /opt/targets/mutillidae
+
+  - name: Remove reference to port 443
+    lineinfile:
+      dest: /opt/targets/mutillidae/docker-compose.yml
+      line: '      - 127.0.0.1:443:443'
+      state: absent
+
+  - name: Remove reference to port 80
+    lineinfile:
+      dest: /opt/targets/mutillidae/docker-compose.yml
+      line: '      - 127.0.0.1:80:80'
+      state: absent
+
+  - name: Switch www port from 8080 to 33081
+    replace:
+      path: /opt/targets/mutillidae/docker-compose.yml
+      regexp: "127.0.0.1:8080:80"
+      replace: "127.0.0.1:33081:80"
+
+  - command:
+      cmd: docker compose create
+      cwd: /opt/targets/mutillidae
+      unsafe: True
+      shell: True
+
+
+
+#  - docker:
+#      name: mutillidae
+#      image: webpwnized/mutillidae
+#      ports:
+#        80/tcp: 33081
+#        22/tcp: 22222
+#        3306/tcp: 33333
 
   - name: Setup hosts file entry (test)
     lineinfile:
@@ -35,8 +67,11 @@ remove:
   - service:
       name: docker
       state: running
-  - docker:
-      name: mutillidae
+  - command:
+      cmd: docker compose down
+      cwd: /opt/targets/mutillidae
+      unsafe: True
+      shell: True
   - name: Remove hosts file entry (test)
     lineinfile:
       dest: /etc/hosts
@@ -50,15 +85,21 @@ start:
   - service:
       name: docker
       state: running
-  - docker:
-      name: mutillidae
+  - command:
+      cmd: docker compose start
+      cwd: /opt/targets/mutillidae
+      unsafe: True
+      shell: True
 
 stop:
   - service:
       name: docker
       state: running
-  - docker:
-      name: mutillidae
+  - command:
+      cmd: docker compose stop
+      cwd: /opt/targets/mutillidae
+      unsafe: True
+      shell: True
 
 status:
   running:
