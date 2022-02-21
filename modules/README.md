@@ -21,6 +21,5 @@ To avoid conflict with other tools and targets, any new modules should run on lo
 |    30081 | mutillidae   | application                       |
 |    31000 | dvwa         | application                       |
 |    31080 | samurai-dojo | dojo-scavenger                    |
-|    33006 | dvwa         |                                   |
 
 *Ports reserved by the host system

@@ -14,10 +14,9 @@ install:
   - name: Install DVWA docker container
     docker:
       name: dvwa
-      image: bit0pus/docker-dvwa
+      image: vulnerables/web-dvwa
       ports:
         80/tcp: 31000
-        3306/tcp: 33006
 
   - name: Setup hosts file entries
     lineinfile:
