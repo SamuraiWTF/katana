@@ -20,5 +20,5 @@ class Replace(Plugin):
         else:
             with fileinput.FileInput(params.get("path"), inplace=True) as file:
                 for line in file:
-                    print(re.sub(params.get('regexp'), params.get('replace'), line))
+                    print(re.sub(params.get('regexp'), params.get('replace'), line.rstrip()))
             return True, None
