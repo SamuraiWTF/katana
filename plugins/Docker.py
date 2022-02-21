@@ -25,7 +25,7 @@ class Docker(Plugin):
             images = client.images.list(name=params.get('image'))
             if len(images) == 0:
                 if params.get('path') is None:
-                    print("       Image not available locally. Pulling from DockerHub.")
+                    print("       Image not available locally. Pulling image from DockerHub: " + params.get('image'))
                     image_id = client.images.pull(params.get('image'))[0].id
                 else:
                     print("      Building image locally at {}".format(params.get('path')))
