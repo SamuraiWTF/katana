@@ -9,9 +9,9 @@ install:
   - name: Setup hosts file entries (wtf)
     lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.1   amoksecurity.wtf'
+      line: '127.0.0.1   amoksecurity.test'
 
-  - name: Create webroot for amoksecurity.wtf
+  - name: Create webroot for amoksecurity.test
     file:
       path: /var/www/amoksecurity
       state: directory
