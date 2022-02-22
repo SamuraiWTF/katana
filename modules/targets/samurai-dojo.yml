@@ -72,10 +72,11 @@ install:
         Requires=docker.service
 
         [Service]
-        Type=simple
+        Type=oneshot
+        RemainAfterExit=true
         WorkingDirectory=/opt/targets/samuraidojo
-        ExecStart=/usr/bin/docker compose start
-        ExecStop=/usr/bin/docker compose stop
+        ExecStart=/usr/local/bin/docker compose up -d --remove-orphans
+        ExecStop=/usr/local/bin/docker compose stop
 
         [Install]
         WantedBy=multi-user.target
@@ -172,10 +173,10 @@ stop:
 status:
   running:
     started:
-      docker: samuraidojo_basicphp
+      service: wtf-dojo
   installed:
     exists:
-      docker: samuraidojo_basicphp
+      path: /opt/targets/samuraidojo
 
 #- name: Start Samurai-Dojo targets
 #  service:
