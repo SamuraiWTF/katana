@@ -118,10 +118,7 @@ remove:
       name: wtf-dojo
       state: stopped
 
-  - rm:
-      path: /opt/targets/samuraidojo
-  - rm:
-      path: /etc/systemd/system/wtf-dojo.service
+
   - name: Remove reverse proxy config for dojo-basic
     reverseproxy:
       hostname: 'dojo-basic.test'
@@ -150,6 +147,10 @@ remove:
       unsafe: True
       shell: True
 
+  - rm:
+      path:
+        - /opt/targets/samuraidojo
+        - /etc/systemd/system/wtf-dojo.service      
   - service:
       name: nginx
       state: restarted
