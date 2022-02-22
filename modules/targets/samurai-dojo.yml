@@ -74,7 +74,8 @@ install:
         [Service]
         Type=simple
         WorkingDirectory=/opt/targets/samuraidojo
-        ExecStart=/usr/bin/docker-compose up
+        ExecStart=/usr/bin/docker compose start
+        ExecStop=/usr/bin/docker compose stop
 
         [Install]
         WantedBy=multi-user.target
