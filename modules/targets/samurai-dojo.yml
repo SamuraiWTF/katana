@@ -101,7 +101,8 @@ install:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-scavenger.test'
       
-  - command:
+  - name: Creating target with docker compose
+    command:
       cmd: docker compose create
       cwd: /opt/targets/samuraidojo
       unsafe: True
