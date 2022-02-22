@@ -99,6 +99,12 @@ install:
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-scavenger.test'
+      
+  - command:
+      cmd: docker compose create
+      cwd: /opt/targets/samuraidojo
+      unsafe: True
+      shell: True
 
   - service:
       name: nginx
@@ -137,14 +143,11 @@ remove:
       dest: /etc/hosts
       line: '127.0.0.1   dojo-scavenger.test'
       state: absent
-  - docker:
-      name: samuraidojo_basicphp
-  - docker:
-      name: samuraidojo_scavengerphp
-  - docker:
-      name: samuraidojo_basicdb_1
-  - docker:
-      name: samuraidojo_scavengerdb_1
+  - command:
+      cmd: docker compose down
+      cwd: /opt/targets/samuraidojo
+      unsafe: True
+      shell: True
 
   - service:
       name: nginx
