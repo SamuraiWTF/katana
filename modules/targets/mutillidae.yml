@@ -59,6 +59,25 @@ install:
       hostname: 'mutillidae.test'
       proxy_pass: 'http://localhost:33081'
 
+  - name: Create Mutillidae target service descriptor
+    copy:
+      dest: /etc/systemd/system/mutillidae.service
+      content: |
+        [Unit]
+        Descriptionmutillidae target service
+        After=docker.service
+        Requires=docker.service
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        WorkingDirectory=/opt/targets/mutillidae
+        ExecStart=/usr/local/bin/docker compose up -d --remove-orphans
+        ExecStop=/usr/local/bin/docker compose stop
+        [Install]
+        WantedBy=multi-user.target
+      mode: 0744
+
+
   - service:
       name: nginx
       state: restarted
@@ -91,21 +110,20 @@ start:
       unsafe: True
       shell: True
 
+start:
+  - service:
+      name: mutillidae
+      state: running
+
 stop:
   - service:
-      name: docker
-      state: running
-  - command:
-      cmd: docker compose stop
-      cwd: /opt/targets/mutillidae
-      unsafe: True
-      shell: True
+      name: mutillidae
+      state: stopped
 
 status:
   running:
     started:
-      docker: mutillidae
+      service: mutillidae
   installed:
     exists:
-      docker: mutillidae
-
+      path: /opt/targets/mutillidae
