@@ -64,7 +64,7 @@ install:
       dest: /etc/systemd/system/mutillidae.service
       content: |
         [Unit]
-        Descriptionmutillidae target service
+        Description=mutillidae target service
         After=docker.service
         Requires=docker.service
         [Service]
