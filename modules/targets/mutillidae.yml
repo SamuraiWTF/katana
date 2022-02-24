@@ -71,8 +71,8 @@ install:
         Type=oneshot
         RemainAfterExit=true
         WorkingDirectory=/opt/targets/mutillidae
-        ExecStart=/usr/local/bin/docker compose up -d --remove-orphans
-        ExecStop=/usr/local/bin/docker compose stop
+        ExecStart=/usr/bin/docker compose up -d --remove-orphans
+        ExecStop=/usr/bin/docker compose stop
         [Install]
         WantedBy=multi-user.target
       mode: 0744
@@ -81,11 +81,16 @@ install:
   - service:
       name: nginx
       state: restarted
+  - command:
+      cmd: systemctl daemon-reload
 
 remove:
   - service:
       name: docker
       state: running
+  - service:
+      name: mutillidae
+      state: stopped
   - command:
       cmd: docker compose down
       cwd: /opt/targets/mutillidae
@@ -96,19 +101,14 @@ remove:
       dest: /etc/hosts
       line: '127.0.0.1   mutillidae.test'
       state: absent
+  - rm:
+      path:
+        - /etc/systemd/system/mutillidae.service
   - name: Remove nginx reverse-proxy config
     reverseproxy:
       hostname: 'mutillidae.test'
-
-start:
-  - service:
-      name: docker
-      state: running
   - command:
-      cmd: docker compose start
-      cwd: /opt/targets/mutillidae
-      unsafe: True
-      shell: True
+      cmd: systemctl daemon-reload
 
 start:
   - service:
