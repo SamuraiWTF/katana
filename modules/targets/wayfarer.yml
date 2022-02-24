@@ -110,7 +110,7 @@ stop:
 status:
   running:
     started:
-      docker: wayfarer_sqldb
+      docker: wayfarer_ticketapp
   installed:
     exists:
       path: /opt/targets/wayfarer
