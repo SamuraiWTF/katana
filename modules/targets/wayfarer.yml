@@ -70,13 +70,6 @@ install:
       cmd: systemctl daemon-reload
 
 remove:
-  - rm:
-      path:
-        - /opt/targets/wayfarer
-        - /usr/local/bin/start_wayfarer.sh
-        - /etc/nginx/conf.d/wayfarer-ticket-app.conf
-        - /etc/nginx/conf.d/wayfarer-ticket-api.conf
-        - /opt/targets/wayfarer/.env
   - lineinfile:
       dest: /etc/hosts
       line: '127.0.0.9   wayfarer.wtf'
@@ -95,6 +88,11 @@ remove:
   - name: Remove nginx reverse proxy and certificate config for api
     reverseproxy:
       hostname: 'api.wayfarer.test'
+  - rm:
+      path:
+        - /usr/local/bin/start_wayfarer.sh
+        - /opt/targets/wayfarer/.env
+        - /opt/targets/wayfarer
   - service:
       name: nginx
       state: restarted
@@ -112,7 +110,7 @@ stop:
 status:
   running:
     started:
-      docker: wayfarer-db 
+      docker: wayfarer_sqldb
   installed:
     exists:
       path: /opt/targets/wayfarer
