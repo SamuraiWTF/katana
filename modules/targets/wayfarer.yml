@@ -25,6 +25,7 @@ install:
       dest: /opt/targets/wayfarer/.env
       content: |
         REACT_APP_API_ORIGIN=https://api.wayfarer.test:8443
+        REACT_APP_OAUTH_ORIGIN=http://auth.wayfarer:8443
         API_PUBLIC_PORT=7001
         APP_PORT=7000
         API_CORS_TYPE=regex
@@ -52,6 +53,11 @@ install:
     reverseproxy:
       hostname: 'api.wayfarer.test'
       proxy_pass: 'http://localhost:7001'
+      
+  - name: Setup nginx reverse-proxy config for wayfarere Auth
+    reverseproxy:
+      hostname: 'auth.wayfarer.test'
+      proxy_pass: 'http://localhost:3002'
 
   - name: Setup hosts file entries (ticket app test)
     lineinfile:
@@ -62,6 +68,11 @@ install:
     lineinfile:
       dest: /etc/hosts
       line: '127.0.0.9   api.wayfarer.test'
+      
+  - name: Setup hosts file entries for auth
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   auth.wayfarer.test'
 
   - service:
       name: nginx
@@ -82,12 +93,20 @@ remove:
       dest: /etc/hosts
       line: '127.0.0.9   api.wayfarer.test'
       state: absent
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   auth.wayfarer.test'
+      state: absent
+    
   - name: Remove nginx reverse proxy and certificate config for app
     reverseproxy:
       hostname: 'wayfarer.test'
   - name: Remove nginx reverse proxy and certificate config for api
     reverseproxy:
       hostname: 'api.wayfarer.test'
+  - name: Remove nginx reverse proxy and certificate config for auth
+    reverseproxy:
+      hostname: 'auth.wayfarer.test'
   - rm:
       path:
         - /usr/local/bin/start_wayfarer.sh
