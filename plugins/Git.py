@@ -16,6 +16,10 @@ class Git(Plugin):
                 False,
                 "Git could not clone because the specified dest path already exists: {}".format(params.get("dest")))
         else:
-            repo = Repo.clone_from(url=params.get("repo"), to_path=params.get("dest"), depth=1)
-            repo.close()
+            if params.get("branch") is None:
+                repo = Repo.clone_from(url=params.get("repo"), to_path=params.get("dest"), depth=1)
+                repo.close()
+            else:
+                repo = Repo.clone_from(url=params.get("repo"), to_path=params.get("dest"), branch=params.get("branch"), depth=1)
+                repo.close()
             return True, None
