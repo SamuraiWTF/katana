@@ -43,7 +43,7 @@ install:
         Terminal=false
         Exec=burp
         Name=Burp Suite
-        Icon=/opt/samurai/icons/burpsuite.png
+        Icon=/opt/katana/icons/burpsuite.png
         Categories=samuraiwtf
         Comment=Interception proxy from Portswigger
         Name[en_US]=Burp Suite

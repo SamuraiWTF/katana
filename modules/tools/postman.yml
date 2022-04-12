@@ -32,7 +32,7 @@ install:
         Terminal=false
         Exec=postman
         Name=Postman
-        Icon=/opt/samurai/icons/postman-logo.png
+        Icon=/opt/katana/icons/postman-logo.png
         Categories=samuraiwtf
         Comment=Web Services client
         Name[en_US]=Postman
