@@ -45,7 +45,7 @@ install:
         CORS_API_PORT=3020
         CORS_API_HOST=api.cors.test
         CORS_API_PROXY_PORT=8443
-        CORS_CLIENT_HOST=cors-dojo.wtf
+        CORS_CLIENT_HOST=cors-dojo.test
         CORS_CLIENT_PORT=3021
         OAUTH_PROVIDER_PORT=3030
         OAUTH_CLIENT_PORT=3031
