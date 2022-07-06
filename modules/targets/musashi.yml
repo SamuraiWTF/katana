@@ -50,7 +50,7 @@ install:
         OAUTH_PROVIDER_PORT=3030
         OAUTH_CLIENT_PORT=3031
         CSP_APP_PORT=3041
-        USE_TLS=FALSE
+        USE_TLS=TRUE
       mode: 0744
 
   - name: Setup hosts file entry for cors-dojo
