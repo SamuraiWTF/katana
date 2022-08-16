@@ -47,7 +47,7 @@ class ReverseProxy(Plugin):
             ext_file.writelines(ext_lines)
             ext_file.close()
 
-            self._run_command('openssl x509 -req -in {hostname}.csr -CA rootCACert.pem -CAkey rootCAKey.pem -CAcreateserial -out {hostname}.crt -days 365-sha256 -extfile {hostname}.ext'.format(hostname=params.get('hostname')), cwd='/etc/samurai.d/certs/')
+            self._run_command('openssl x509 -req -in {hostname}.csr -CA rootCACert.pem -CAkey rootCAKey.pem -CAcreateserial -out {hostname}.crt -days 365 -sha256 -extfile {hostname}.ext'.format(hostname=params.get('hostname')), cwd='/etc/samurai.d/certs/')
 
         nginx_conf_lines = [
             'server {\n',
