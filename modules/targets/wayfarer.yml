@@ -10,7 +10,7 @@ install:
     git:
       repo: https://github.com/SamuraiWTF/wayfarer.git
       dest: /opt/targets/wayfarer
-      branch: ctq_2
+      branch: main
 
   - name: Build the docker images
     command: 
