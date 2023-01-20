@@ -22,6 +22,20 @@ def _get_link_from_page(url, link_pattern):
             return '{}://{}{}'.format(parsed_uri.scheme, parsed_uri.netloc, urls[0])
 
     else:
+        # TODO: there's probably a better way to do this
+        # This is specifically to address GitHub's <include-fragment> custom HTML tag
+        # 'expanded_assets' is a line present in several GH Releases pages, 
+        # so I figured it would work pretty well.
+        if 'expanded_assets' in response.text:
+            regex_find_src = '.*expanded_assets.*'
+            find_src = re.findall(regex_find_src, response.text)
+            for line in find_src:
+                find_assets = line.split('"')
+                if len(find_assets) > 0:
+                    for r in range(len(find_assets)):
+                        if find_assets[r].startswith('http'):
+                            return _get_link_from_page(find_assets[r], link_pattern)
+
         print(response.text)
         raise katanaerrors.CriticalFunctionFailure('get_url', 'Could not find link pattern in resulting page.')
 
