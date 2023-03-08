@@ -73,11 +73,11 @@ def _run_function(module_name, function_name, step=False):
         raise katanaerrors.NotImplemented(function_name, type(provisioner).__name__)
 
 
-def install_module(name, step):
+def install_module(name, step=False):
     _run_function(name, "install", step)
 
 
-def remove_module(name, step):
+def remove_module(name, step=False):
     _run_function(name, "remove", step)
 
 
