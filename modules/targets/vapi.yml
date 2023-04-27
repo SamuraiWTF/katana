@@ -1,0 +1,70 @@
+---
+
+name: vapi 
+category: targets
+description: Vulnerable API that covers the OWASP API Top 10 
+href: http://vapi.test:8000
+
+install:
+  - name: Get the latest release of vapi 
+    git:
+      repo: https://github.com/SamuraiWTF/vapi.git
+      dest: /opt/targets/vapi
+      # pull from our current master 
+      branch: master 
+
+  - name: Setup nginx reverse-proxy config for vapi 
+    reverseproxy:
+      hostname: 'vapi.test'
+      proxy_pass: 'http://localhost:7000'
+
+  - name: Setup hosts file entries 
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   vapi.test'
+
+  - service:
+      name: nginx
+      state: restarted
+  - command:
+      cmd: systemctl daemon-reload
+
+remove:
+  - lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.9   vapi.wtf'
+      state: absent
+    
+  - name: Remove nginx reverse proxy and certificate config for app
+    reverseproxy:
+      hostname: 'vapi.test'
+
+  - rm:
+      path:
+        - /opt/targets/vapi
+
+  - service:
+      name: nginx
+      state: restarted
+  - command:
+      cmd: systemctl daemon-reload
+
+start:
+  - command:
+      cmd: cd /opt/targets/vapi && docker-compose up -d 
+      shell: true
+      unsafe: true
+
+stop:
+  - command:
+      cmd: cd /opt/targets/vapi && docker-compose down
+      shell: true
+      unsafe: true
+
+status:
+  running:
+    started:
+      docker: vapi 
+  installed:
+    exists:
+      path: /opt/targets/vapi
