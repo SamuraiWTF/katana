@@ -1,0 +1,22 @@
+---
+
+name: ffuf
+category: tools
+description: Fuzz Faster U Fool CLI fuzzer
+
+
+install:
+  - name: Download and install and ffuf
+    unarchive:
+      url: https://github.com/ffuf/ffuf/releases/download/v2.0.0/ffuf_2.0.0_linux_amd64.tar.gz
+      dest: /usr/local/bin
+
+
+remove:
+  - rm:
+      path: /usr/local/bin/ffuf
+
+status:
+  installed:
+    exists:
+      path: /usr/local/bin/ffuf
