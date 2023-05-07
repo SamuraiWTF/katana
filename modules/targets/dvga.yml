@@ -1,6 +1,6 @@
 ---
 
-name: wrongsecrets
+name: dvga
 category: targets
 description: Damn Vulnerable GraphQL Application.
 href: http://dvga.test
