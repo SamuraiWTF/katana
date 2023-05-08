@@ -1,0 +1,22 @@
+---
+
+name: trufflehog
+category: tools
+description: Tool to find leaked credentials in GitHub.
+
+
+install:
+  - name: Download and install and trufflehog
+    unarchive:
+      url: https://github.com/trufflesecurity/trufflehog/releases/download/v3.33.0/trufflehog_3.33.0_linux_amd64.tar.gz
+      dest: /usr/local/bin
+
+
+remove:
+  - rm:
+      path: /usr/local/bin/trufflehog
+
+status:
+  installed:
+    exists:
+      path: /usr/local/bin/trufflehog

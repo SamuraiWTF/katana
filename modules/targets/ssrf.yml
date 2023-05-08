@@ -1,0 +1,86 @@
+---
+
+    name: ssrf 
+    category: targets
+    description: A simple SSRF vulnerability in an API gateway.
+    href: http://ssrf.test
+    
+    install:
+      - name: Get the repo
+        git:
+          repo: https://github.com/ProfessionallyEvil/arrrspace.git
+          branch: ssrf_only
+          dest: /opt/targets/ssrf
+    
+      - name: Build image
+        command:
+          cwd: /opt/targets/ssrf
+          cmd: /opt/targets/ssrf/setup.sh
+    
+      - name: Setup web app hosts file entry (wtf)
+        lineinfile:
+          dest: /etc/hosts
+          line: '127.0.0.1  ssrf.test'
+    
+      - name: Set up web app nginx reverse-proxy config
+        reverseproxy:
+          hostname: 'ssrf.test'
+          proxy_pass: 'http://localhost:7000'
+    
+      - service:
+          name: nginx
+          state: restarted
+
+      - command:
+          cmd: systemctl daemon-reload
+    
+    remove:
+      - name: Remove repo
+        rm:
+          path: /opt/targets/ssrf
+      - name: Stop container
+        command:
+          cmd: docker stop ssrf-gateway
+      - name: Remove images
+        command:
+          unsafe: True
+          shell: True
+          cmd: docker rmi ssrf-gateway 
+      - lineinfile:
+          dest: /etc/hosts
+          line: '127.0.0.1  ssrf.test'
+          state: absent
+    
+    start:
+      - service:
+          name: docker
+          state: running
+      - command:
+          cmd: cd /opt/targets/ssrf && docker-compose up -d
+          shell: true
+          unsafe: true 
+      - command:
+          cmd: sleep 10 
+      - command:
+          cwd: /opt/targets/ssrf
+          cmd: docker-compose exec gateway eg users create -p "admin=true" -p "username=nevil" -p "firstname=nevil" -p "lastname=devil"
+      - command:
+          cwd: /opt/targets/ssrf
+          cmd: docker-compose exec gateway eg credentials create -c nevil -t oauth2
+    
+    stop:
+      - service:
+          name: docker
+          state: running
+      - command:
+          cmd: cd /opt/targets/ssrf && docker-compose down
+          shell: true
+          unsafe: true
+    
+    status:
+      running:
+        started:
+          docker: ssrf-gateway 
+      installed:
+        exists:
+          path: /opt/targets/ssrf
