@@ -2,7 +2,7 @@
 
 # Katana
 Katana is the package management tool and interface for SamuraiWTF 5.0+. Specifically Katana is intended to be used by instructors to set up a classroom lab that
-will be distrubuted to their students, or by self-study students to install the tools and targets they desire to use.
+will be distributed to their students, or by self-study students to install the tools and targets they desire to use.
 
 _IMPORTANT NOTES:_
 * _Katana runs as root. It is intended only to be used in a temporary classroom environment. Don't install it on any network that is important to you._
@@ -13,7 +13,7 @@ non-SamuraiWTF build._
 ## Using Katana
 There are two ways to use Katana:
 
-### Using Katana with the Web  User Interface
+### Using Katana with the Web User Interface
 By default, Katana should be running at `http://katana.wtf` from within your SamuraiWTF environment. Simply visit the Katana URL from any web browser inside the 
 environment. From the. GUI you will be able to install, stop, and start any of the Katana-defined tools and targets. Note that an internet connection is required to
 install tools and targets.
