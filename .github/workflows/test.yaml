@@ -33,7 +33,7 @@ jobs:
           java-version: '17'
 
       - name: setup
-        run: ./test/provision-ubuntu.sh
+        run: sudo ./test/provision-ubuntu.sh
 
       - name: verify burpsuite
-        run: ./test/test-burpsuite.sh
+        run: sudo ./test/test-burpsuite.sh
