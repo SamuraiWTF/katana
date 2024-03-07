@@ -16,24 +16,91 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: setup
-        run: sudo ./test/provision-ubuntu.sh
-
-      - name: verify burpsuite
-        run: sudo ./test/test-burpsuite.sh
+  test-sqlmap:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: sqlmap
+  test-wordlists:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: wordlists
+  test-trufflehog:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: trufflehog
+  test-ffuf:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: ffuf
+  test-postman:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: postman
+  test-zap:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: zap
+  test-burpsuite:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: burpsuite
+  test-nikto:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: nikto
+  test-musashi:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: musashi
+  test-juice-shop:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: juice-shop
+  test-ssrf:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: ssrf
+  test-vapi:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: vapi
+  test-dvwa:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: dvwa
+  test-samurai-dojo:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: samurai-dojo
+  test-wrongsecrets:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: wrongsecrets
+  test-dvga:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: dvga
+  test-arrrspace:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: arrrspace
+  test-amoksecurity:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: amoksecurity
+  test-wayfarer:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: wayfarer
+  test-plugin-labs:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: plugin-labs
+  test-mutillidae:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: mutillidae
+  test-katana:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: katana

@@ -5,12 +5,22 @@ yum install -y yum-utils
 if ! command -v docker; then
   yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
   yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  if [[ ! -x /usr/bin/docker-compose ]]; then
+    cat <<EOF > /usr/bin/docker-compose
+#!/bin/bash
+exec docker compose "$@"
+EOF
+    chmod +x /usr/bin/docker-compose
+  fi
+
   systemctl enable docker
   systemctl start docker
   usermod -a -G docker vagrant
 fi
 
-yum install -y python3-pip git jq java-17-openjdk-headless nginx
+yum install -y python3-pip git jq java-17-openjdk-headless nginx yarnpkg
+ln -sf /usr/bin/yarnpkg /usr/bin/yarn
 systemctl enable nginx
 systemctl start nginx
 
