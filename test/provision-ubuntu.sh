@@ -17,12 +17,21 @@ if ! command -v docker; then
   apt-get update
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+  if [[ ! -x /usr/bin/docker-compose ]]; then
+    cat <<EOF > /usr/bin/docker-compose
+#!/bin/bash
+exec docker compose "\$@"
+EOF
+    chmod +x /usr/bin/docker-compose
+  fi
+
   systemctl enable docker
   systemctl start docker
   usermod -a -G docker vagrant
 fi
 
-apt-get install -y python3-pip git jq openjdk-17-jdk-headless nginx
+apt-get install -y python3-pip git jq openjdk-17-jdk-headless nginx yarnpkg
+ln -sf /usr/bin/yarnpkg /usr/bin/yarn
 systemctl enable nginx
 systemctl start nginx
 
@@ -44,3 +53,9 @@ cat > /usr/bin/katana <<EOF
 sudo python3 ./katanacli.py "\$@"
 EOF
 chmod 0755 /usr/bin/katana
+
+# On GitHub, checkout is done in a directory chosen by actions/checkout
+if [[ ! -f /opt/katana/katanacli.py ]] && [[ -f ./katanacli.py ]]; then
+  rmdir /opt/katana
+  ln -sf "$(pwd)" /opt/katana
+fi

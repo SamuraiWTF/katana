@@ -5,11 +5,21 @@ yum install -y yum-utils
 if ! command -v docker; then
   yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
   yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  if [[ ! -x /usr/bin/docker-compose ]]; then
+    cat <<EOF > /usr/bin/docker-compose
+#!/bin/bash
+exec docker compose "$@"
+EOF
+    chmod +x /usr/bin/docker-compose
+  fi
+
   systemctl enable docker
   systemctl start docker
   usermod -a -G docker vagrant
 fi
 
+# TODO: recent nodejs and yarn
 yum install -y python3-pip git jq java-17-openjdk-headless nginx
 systemctl enable nginx
 systemctl start nginx
@@ -32,3 +42,9 @@ cat > /usr/bin/katana <<EOF
 sudo python3 ./katanacli.py "\$@"
 EOF
 chmod 0755 /usr/bin/katana
+
+# On GitHub, checkout is done in a directory chosen by actions/checkout
+if [[ ! -f /opt/katana/katanacli.py ]] && [[ -f ./katanacli.py ]]; then
+  rmdir /opt/katana
+  ln -sf "$(pwd)" /opt/katana
+fi

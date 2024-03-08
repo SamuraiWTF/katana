@@ -16,7 +16,7 @@ install:
   - name: Setup nginx reverse-proxy config for vapi 
     reverseproxy:
       hostname: 'vapi.test'
-      proxy_pass: 'http://localhost:7000'
+      proxy_pass: 'http://localhost:8000'
 
   - name: Setup hosts file entries 
     lineinfile:

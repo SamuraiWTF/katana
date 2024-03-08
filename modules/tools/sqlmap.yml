@@ -16,7 +16,7 @@ install:
       content: |
         #!/bin/bash
         cd /opt/samurai/sqlmap
-        ./sqlmap.py "$@"
+        python3 ./sqlmap.py "$@"
       mode: 0777
 
   - name: Create sqlmap menu item

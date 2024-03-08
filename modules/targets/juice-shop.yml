@@ -6,35 +6,17 @@ description: A rich-featured modern vulnerable app from OWASP, featuring a built
 href: https://juice-shop.test:8443
 
 install:
-  - name: Get the latest release page of Juice Shop
-    get_url:
-      url: https://github.com/juice-shop/juice-shop/releases/latest
-      dest: /opt/targets/juice-shop
-      link_pattern: \/juice-shop\/juice-shop\/releases\/download\/.*_node16_linux_x64.tgz
+  - name: Make sure docker service is running
+    service:
+      name: docker
+      state: running
 
-  - name: Script to start juice shop
-    copy:
-      dest: /usr/local/bin/start_juice-shop.sh
-      content: |
-        #!/bin/bash
-
-        export JUICE_SHOP_PATH=$(find /opt/targets/juice-shop/ -name 'juice-shop_*')
-        cd $JUICE_SHOP_PATH
-        npm start &
-      mode: 0744
-
-  - name: Create service descriptor for wtf-juice-shop
-    copy:
-      dest: /etc/systemd/system/wtf-juice-shop.service
-      content: |
-        [Unit]
-        Description=Juice Shop Target service
-        [Service]
-        Type=forking
-        ExecStart=/usr/local/bin/start_juice-shop.sh
-        [Install]
-        WantedBy=multi-user.target
-      mode: 0744
+  - name: Install Juice Shop docker container
+    docker:
+      name: juice-shop
+      image: bkimminich/juice-shop
+      ports:
+        3000/tcp: 3000
 
   - name: Setup hosts file entries (wtf)
     lineinfile:
@@ -54,18 +36,13 @@ install:
   - service:
       name: nginx
       state: restarted
-  - command:
-      cmd: systemctl daemon-reload
 
 remove:
   - service:
-      name: wtf-juice-shop
-      state: stopped
-  - rm:
-      path:
-        - /opt/targets/juice-shop
-        - /usr/local/bin/start_juice-shop.sh
-        - /etc/systemd/system/wtf-juice-shop.service
+      name: docker
+      state: running
+  - docker:
+      name: juice-shop
   - name: Remove juice-shop nginx config
     reverseproxy:
       hostname: 'juice-shop.test'
@@ -82,23 +59,26 @@ remove:
   - service:
       name: nginx
       state: restarted
-  - command:
-      cmd: systemctl daemon-reload
 
 start:
   - service:
-      name: wtf-juice-shop
+      name: docker
       state: running
+  - docker:
+      name: juice-shop
 
 stop:
   - service:
-      name: wtf-juice-shop
-      state: stopped
+      name: docker
+      state: running
+  - docker:
+      name: juice-shop
 
 status:
   running:
     started:
-      service: wtf-juice-shop
-  installed:
-    exists:
-      path: /opt/targets/juice-shop
+      docker: juice-shop
+
+installed:
+  exists:
+    docker: juice-shop

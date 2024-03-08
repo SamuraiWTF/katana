@@ -25,7 +25,7 @@
       - name: Set up web app nginx reverse-proxy config
         reverseproxy:
           hostname: 'ssrf.test'
-          proxy_pass: 'http://localhost:7000'
+          proxy_pass: 'http://localhost:8000'
     
       - service:
           name: nginx
