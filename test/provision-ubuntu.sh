@@ -53,3 +53,9 @@ cat > /usr/bin/katana <<EOF
 sudo python3 ./katanacli.py "\$@"
 EOF
 chmod 0755 /usr/bin/katana
+
+# On GitHub, checkout is done in a directory chosen by actions/checkout
+if [[ ! -f /opt/katana/katanacli.py ]] && [[ -f ./katanacli.py ]]; then
+  rmdir /opt/katana
+  ln -sf "$(pwd)" /opt/katana
+fi
