@@ -1,19 +1,19 @@
 ---
 
-    name: arrrspace
+    name: k8s-labs
     category: targets
-    description: A *very* insecure faux social media platform deployed to a Kuberenetes cluster.
-    href: http://arrrspace.wtf
+    description: An insecure k8s cluster to hack on.
+    href: http://k8s-labs.wtf
     
     install:
       - name: Install conntrack in root path
         command:
           cmd: apt install conntrack
 
-      - name: Get the arrrspace repo
+      - name: Get the k8s-labs repo
         git:
-          repo: https://github.com/ProfessionallyEvil/arrrspace.git
-          dest: /opt/targets/arrrspace
+          repo: https://github.com/ProfessionallyEvil/k8s-lab.git
+          dest: /opt/targets/k8s-labs
     
       - name: Download minikube bin
         get_url:
@@ -35,46 +35,36 @@
         command:
           cmd: chmod +x /usr/bin/kubectl
     
-      - name: Build Arrrspace cluster 
+      - name: Setup cluster 
         command: 
-          cwd: /opt/targets/arrrspace
-          cmd: /opt/targets/arrrspace/setup.sh createcluster
-    
-      - name: Build Arrrspace images
-        command:
-          cwd: /opt/targets/arrrspace
-          cmd: /opt/targets/arrrspace/setup.sh buildimages
-    
-      - name: Deploy resources to cluster
-        command:
-          cwd: /opt/targets/arrrspace
-          cmd: /opt/targets/arrrspace/setup.sh deployservices
+          cwd: /opt/targets/k8s-labs
+          cmd: /opt/targets/k8s-labs/setup.sh
     
       - name: Setup web app hosts file entry (wtf)
         lineinfile:
           dest: /etc/hosts
-          line: '127.0.0.1  arrrspace.wtf'
+          line: '127.0.0.1  k8s-labs.wtf'
     
       - name: Set api hosts file entry (wtf)
         lineinfile:
           dest: /etc/hosts
-          line: '127.0.0.1  api.arrrspace.wtf'
+          line: '127.0.0.1  api.k8s-labs.wtf'
 
       # hacks to make this work more dynamically without supporting state in katana manifests
       - name: Write cluster IP to file
         command:
           unsafe: True
           shell: True
-          cwd: /opt/targets/arrrspace
-          cmd: "minikube ip > /opt/targets/arrrspace/cluster_ip.txt"
+          cwd: /opt/targets/k8s-labs
+          cmd: "minikube ip > /opt/targets/k8s-labs/cluster_ip.txt"
     
       - name: Set up web app nginx reverse-proxy config
         copy:
-          dest: /etc/nginx/conf.d/arrrspace.conf
+          dest: /etc/nginx/conf.d/k8s-labs.conf
           content: |
             server {
               listen 80;
-              server_name arrrspace.wtf arrrspace.test;
+              server_name k8s-labs.wtf k8s-labs.test;
               location / {
                 proxy_pass http://{{CLUSTER_IP}}:31380;
               }
@@ -83,11 +73,11 @@
     
       - name: Set up api nginx reverse-proxy config
         copy:
-          dest: /etc/nginx/conf.d/api.arrrspace.conf
+          dest: /etc/nginx/conf.d/api.k8s-labs.conf
           content: |
             server {
               listen 80;
-              server_name api.arrrspace.wtf api.arrrspace.test;
+              server_name api.k8s-labs.wtf api.k8s-labs.test;
               location / {
                 proxy_pass http://{{CLUSTER_IP}}:31337;
               }
@@ -98,16 +88,16 @@
         command:
           shell: True
           unsafe: True
-          cmd: sed -i "s/{{CLUSTER_IP}}/$(cat /opt/targets/arrrspace/cluster_ip.txt)/g" /etc/nginx/conf.d/*arrrspace.conf
+          cmd: sed -i "s/{{CLUSTER_IP}}/$(cat /opt/targets/k8s-labs/cluster_ip.txt)/g" /etc/nginx/conf.d/*k8s-labs.conf
 
       - service:
           name: nginx
           state: restarted
     
     remove:
-      - name: Remove Arrrspace repo
+      - name: Remove repo
         rm:
-          path: /opt/targets/arrrspace
+          path: /opt/targets/k8s-labs
       - name: Delete cluster
         command:
           cmd: minikube delete
@@ -115,7 +105,7 @@
         command:
           unsafe: True
           shell: True
-          cmd: docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'arrrspace')
+          cmd: docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'k8slabs')
       - name: Cleanup .kube dir
         rm:
           path: /root/.kube 
@@ -128,12 +118,12 @@
       - name: Remove kubectl
         rm:
           path: /usr/bin/kubectl
-      - name: Remove arrrspace nginx conf
+      - name: Remove nginx conf
         rm:
-          path: /etc/nginx/conf.d/arrrspace.conf
-      - name: Remove api.arrrspace nginx conf
+          path: /etc/nginx/conf.d/k8s-labs.conf
+      - name: Remove api.k8s-labs nginx conf
         rm:
-          path: /etc/nginx/conf.d/api.arrrspace.conf
+          path: /etc/nginx/conf.d/api.k8s-labs.conf
     
     start:
       - service:
