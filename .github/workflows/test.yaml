@@ -80,10 +80,10 @@ jobs:
     uses: ./.github/workflows/package-test.yaml
     with:
       package-name: dvga
-  test-arrrspace:
+  test-k8s-labs:
     uses: ./.github/workflows/package-test.yaml
     with:
-      package-name: arrrspace
+      package-name: k8s-labs
   test-amoksecurity:
     uses: ./.github/workflows/package-test.yaml
     with:
