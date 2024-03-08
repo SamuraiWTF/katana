@@ -19,8 +19,8 @@ EOF
   usermod -a -G docker vagrant
 fi
 
-yum install -y python3-pip git jq java-17-openjdk-headless nginx yarnpkg
-ln -sf /usr/bin/yarnpkg /usr/bin/yarn
+# TODO: recent nodejs and yarn
+yum install -y python3-pip git jq java-17-openjdk-headless nginx
 systemctl enable nginx
 systemctl start nginx
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-
 for TEST_SCRIPT in $(find "$(dirname "$0")" -name "test-*sh" -not -name "$(basename "$0")"); do
   echo -n "${TEST_SCRIPT} ... "
   "${TEST_SCRIPT}" >/dev/null 2>/dev/null
