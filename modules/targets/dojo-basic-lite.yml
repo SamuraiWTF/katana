@@ -1,0 +1,84 @@
+---
+
+name: dojo-basic-lite
+category: targets
+description: A basic classic php app from Samurai dojo, refactored to run with SQLite.
+href: https://dojo-basic.example.com
+
+install:
+  - name: Make sure docker service is running
+    service:
+      name: docker
+      state: running
+
+  - name: Install Dojo Basic lite
+    docker:
+      name: dojo-basic-lite
+      image: ghcr.io/samuraiwtf/dojo-scavenger-lite:latest
+      ports:
+        8085/tcp: 80
+
+  - name: Setup hosts file entries (wtf)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.wtf'
+
+  - name: Setup hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.test'
+
+  - name: Create dojo-basic nginx config
+    reverseproxy:
+      hostname: 'dojo-basic.test'
+      proxy_pass: 'http://localhost:8085'
+
+  - service:
+      name: nginx
+      state: restarted
+
+remove:
+  - service:
+      name: docker
+      state: running
+  - docker:
+      name: dojo-basic-lite
+  - name: Remove dojo-basic-lite nginx config
+    reverseproxy:
+      hostname: 'dojo-basic.test'
+  - name: Remove hosts file entries (wtf)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.wtf'
+      state: absent
+  - name: Remove hosts file entries (test)
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.test'
+      state: absent
+  - service:
+      name: nginx
+      state: restarted
+
+start:
+  - service:
+      name: docker
+      state: running
+  - docker:
+      name: dojo-basic-lite
+
+stop:
+  - service:
+      name: docker
+      state: running
+  - docker:
+      name: dojo-basic-lite
+
+status:
+  running:
+    started:
+      docker: dojo-basic-lite
+
+installed:
+  exists:
+    docker: dojo-basic-lite
