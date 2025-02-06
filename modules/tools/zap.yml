@@ -6,7 +6,7 @@ description: Open source interception proxy for web pentesting.
 
 install:
   - unarchive:
-      url: https://github.com/zaproxy/zaproxy/releases/download/v2.14.0/ZAP_2.14.0_Linux.tar.gz
+      url: https://github.com/zaproxy/zaproxy/releases/download/v2.16.0/ZAP_2.16.0_Linux.tar.gz
       dest: /opt/samurai/
 
   - name: Create zap menu item
@@ -19,7 +19,7 @@ install:
         Version=1.0
         Type=Application
         Terminal=false
-        Exec=/opt/samurai/ZAP_2.14.0/zap.sh
+        Exec=/opt/samurai/ZAP_2.16.0/zap.sh
         Name=ZAP
         Icon=/opt/katana/icons/zap.png
         Categories=samuraiwtf
@@ -30,11 +30,11 @@ install:
 
 remove:
   - rm:
-      path: /opt/samurai/ZAP_2.14.0
+      path: /opt/samurai/ZAP_2.16.0
   - rm:
       path: /etc/samurai.d/applications/zap.desktop
 
 status:
   installed:
     exists:
-      path: /opt/samurai/ZAP_2.14.0
+      path: /opt/samurai/ZAP_2.16.0
