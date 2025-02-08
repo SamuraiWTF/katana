@@ -3,6 +3,7 @@ import subprocess
 import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
+from .Plugin import Plugin
 
 try:
     import gi
@@ -12,7 +13,7 @@ try:
 except (ImportError, ValueError):
     HAVE_GIO = False
 
-class DesktopIntegration:
+class DesktopIntegration(Plugin):
     """Plugin for handling desktop integration tasks like menu items and favorites."""
 
     @classmethod
@@ -20,6 +21,7 @@ class DesktopIntegration:
         return ['desktop']
 
     def __init__(self):
+        super().__init__()
         self.apps_dir = Path.home() / '.local/share/applications'
         self.apps_dir.mkdir(parents=True, exist_ok=True)
 
@@ -58,6 +60,9 @@ class DesktopIntegration:
 
     def install(self, params: Dict[str, Any]):
         """Install a desktop file and optionally add to favorites."""
+        required_params = ['desktop_file']
+        self._validate_params(params, required_params, 'desktop')
+        
         if not self._is_supported_environment():
             return
         
@@ -93,6 +98,9 @@ class DesktopIntegration:
 
     def remove(self, params: Dict[str, Any]):
         """Remove a desktop file and from favorites if present."""
+        required_params = ['filename']
+        self._validate_params(params, required_params, 'desktop')
+        
         if not self._is_supported_environment():
             return
 
