@@ -116,16 +116,21 @@ class DesktopIntegration(Plugin):
                     current_favs = [x.strip("' ") for x in current.split(',') if x.strip("' ")]
             except Exception:
                 current_favs = []
+
+            print(f"Current favorites: {current_favs}")
             
             # Update favorites list without checking if it changed
             if add:
                 if filename not in current_favs:
                     current_favs.append(filename)
+                    print(f"Adding {filename} to favorites")
             else:
                 current_favs = [x for x in current_favs if x != filename]
+                print(f"Removing {filename} from favorites")
             
             # Convert to gsettings format and update
             favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
+            print(f"Updating favorites to: {fav}")
             
             # Add a short delay before setting
             time.sleep(1)
