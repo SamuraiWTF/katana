@@ -6,14 +6,6 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from .Plugin import Plugin
 
-try:
-    import gi
-    gi.require_version('Gio', '2.0')
-    from gi.repository import Gio
-    HAVE_GIO = True
-except (ImportError, ValueError):
-    HAVE_GIO = False
-
 class DesktopIntegration(Plugin):
     """Plugin for handling desktop integration tasks like menu items and favorites."""
 
@@ -47,44 +39,8 @@ class DesktopIntegration(Plugin):
         return subprocess.run(cmd, check=check, text=True, capture_output=True)
 
     def _is_supported_environment(self) -> bool:
-        """Check if we're in a supported desktop environment."""
-        if os.name != 'posix':
-            return False
-        
-        # Check for display as the real user
-        try:
-            # Try to get DISPLAY from the user's environment
-            result = self._run_as_user(['sh', '-c', 'echo $DISPLAY'], check=False)
-            display = result.stdout.strip() if result.stdout else None
-            
-            # Try to get WAYLAND_DISPLAY from the user's environment
-            result = self._run_as_user(['sh', '-c', 'echo $WAYLAND_DISPLAY'], check=False)
-            wayland = result.stdout.strip() if result.stdout else None
-            
-            if not display and not wayland:
-                # Fall back to current environment if needed
-                display = os.environ.get('DISPLAY')
-                wayland = os.environ.get('WAYLAND_DISPLAY')
-                
-            return bool(display or wayland)
-        except subprocess.SubprocessError:
-            # Fall back to checking current environment
-            return bool(os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY'))
-
-    def _is_gnome(self) -> bool:
-        """Check if running under GNOME."""
-        try:
-            # Try to get XDG_CURRENT_DESKTOP from the user's environment
-            result = self._run_as_user(['sh', '-c', 'echo $XDG_CURRENT_DESKTOP'], check=False)
-            desktop = result.stdout.strip() if result.stdout else None
-            
-            # Fall back to current environment if needed
-            if not desktop:
-                desktop = os.environ.get('XDG_CURRENT_DESKTOP', '')
-                
-            return desktop.lower() == 'gnome'
-        except subprocess.SubprocessError:
-            return os.environ.get('XDG_CURRENT_DESKTOP', '').lower() == 'gnome'
+        """Check if we're in a supported environment."""
+        return os.name == 'posix'
 
     def _update_desktop_database(self):
         """Update the desktop database if possible."""
@@ -111,30 +67,43 @@ class DesktopIntegration(Plugin):
             return False, f"Missing required fields: {', '.join(missing)}"
         return True, None
 
-    def _add_to_gnome_favorites(self, desktop_id: str) -> Tuple[bool, Optional[str]]:
-        """Add an application to GNOME favorites."""
-        if not HAVE_GIO or not self._is_gnome():
-            return False, "GNOME integration not available"
-
+    def _update_favorites(self, filename: str, add: bool = True) -> Tuple[bool, Optional[str]]:
+        """Update GNOME favorites using gsettings."""
         try:
-            # Run gsettings as the real user
-            cmd = [
-                'gsettings', 'get', 'org.gnome.shell', 'favorite-apps'
-            ]
-            result = self._run_as_user(cmd, check=True)
-            current_favs = eval(result.stdout)  # Convert string repr of list to actual list
+            # Get current favorites
+            result = self._run_as_user(['gsettings', 'get', 'org.gnome.shell', 'favorite-apps'])
+            if result.returncode != 0:
+                return False, "Failed to get current favorites"
             
-            if desktop_id not in current_favs:
-                current_favs.append(desktop_id)
-                set_cmd = [
-                    'gsettings', 'set', 'org.gnome.shell', 'favorite-apps',
-                    str(current_favs)
-                ]
-                self._run_as_user(set_cmd, check=True)
-                return True, "Added to GNOME favorites"
-            return False, "Already in favorites"
-        except Exception as e:
-            return False, f"Failed to add to favorites: {str(e)}"
+            # Parse the current favorites string into a list
+            try:
+                # The output is typically in the format: ['app1.desktop', 'app2.desktop']
+                current = result.stdout.strip()
+                if current.startswith('[') and current.endswith(']'):
+                    current = current[1:-1]  # Remove [ and ]
+                current_favs = [x.strip("' ") for x in current.split(',') if x.strip("' ")]
+            except Exception:
+                current_favs = []
+            
+            changed = False
+            if add and filename not in current_favs:
+                current_favs.append(filename)
+                changed = True
+            elif not add and filename in current_favs:
+                current_favs.remove(filename)
+                changed = True
+            
+            if changed:
+                # Convert back to gsettings format
+                favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
+                result = self._run_as_user(['gsettings', 'set', 'org.gnome.shell', 'favorite-apps', favs_str])
+                if result.returncode == 0:
+                    return True, "Updated GNOME favorites"
+                return False, "Failed to update favorites"
+            
+            return False, "No change needed for favorites"
+        except subprocess.SubprocessError as e:
+            return False, f"Failed to update favorites: {str(e)}"
 
     def install(self, params: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
         """Install a desktop file and optionally add to favorites."""
@@ -142,13 +111,7 @@ class DesktopIntegration(Plugin):
         self._validate_params(params, required_params, 'desktop')
         
         if not self._is_supported_environment():
-            print(f"Debug: Display={os.environ.get('DISPLAY')}, Wayland={os.environ.get('WAYLAND_DISPLAY')}")
-            try:
-                result = self._run_as_user(['sh', '-c', 'env | grep -E "DISPLAY|WAYLAND|DESKTOP"'])
-                print(f"Debug: User environment:\n{result.stdout}")
-            except:
-                pass
-            return False, "Not a supported desktop environment"
+            return False, "Not a supported environment (requires POSIX)"
         
         desktop_file = params.get('desktop_file')
         if not desktop_file:
@@ -196,13 +159,6 @@ class DesktopIntegration(Plugin):
                     os.chown(desktop_path, uid, gid)
                 msg_parts.append("Desktop file created/updated")
 
-                # Debug: show file contents and permissions
-                print(f"Debug: Desktop file path: {desktop_path}")
-                print(f"Debug: Desktop file contents:\n{content}")
-                if desktop_path.exists():
-                    print(f"Debug: File permissions: {oct(desktop_path.stat().st_mode)}")
-                    print(f"Debug: File owner: {desktop_path.stat().st_uid}:{desktop_path.stat().st_gid}")
-
             # Try using xdg-desktop-menu as the real user
             try:
                 result = self._run_as_user(['xdg-desktop-menu', 'install', '--novendor', str(desktop_path)])
@@ -216,7 +172,7 @@ class DesktopIntegration(Plugin):
 
             # Add to favorites if requested
             if add_to_favorites:
-                fav_changed, fav_msg = self._add_to_gnome_favorites(filename)
+                fav_changed, fav_msg = self._update_favorites(filename, add=True)
                 if fav_changed:
                     changed = True
                 if fav_msg:
@@ -233,7 +189,7 @@ class DesktopIntegration(Plugin):
         self._validate_params(params, required_params, 'desktop')
         
         if not self._is_supported_environment():
-            return False, "Not a supported desktop environment"
+            return False, "Not a supported environment (requires POSIX)"
 
         filename = params.get('filename')
         if not filename:
@@ -260,24 +216,12 @@ class DesktopIntegration(Plugin):
                 self._update_desktop_database()
                 msg_parts.append("Updated desktop database")
 
-            # Remove from favorites if in GNOME
-            if HAVE_GIO and self._is_gnome():
-                try:
-                    cmd = ['gsettings', 'get', 'org.gnome.shell', 'favorite-apps']
-                    result = self._run_as_user(cmd, check=True)
-                    current_favs = eval(result.stdout)
-                    
-                    if filename in current_favs:
-                        current_favs.remove(filename)
-                        set_cmd = [
-                            'gsettings', 'set', 'org.gnome.shell', 'favorite-apps',
-                            str(current_favs)
-                        ]
-                        self._run_as_user(set_cmd, check=True)
-                        changed = True
-                        msg_parts.append("Removed from GNOME favorites")
-                except Exception as e:
-                    msg_parts.append(f"Failed to remove from favorites: {str(e)}")
+            # Remove from favorites if present
+            fav_changed, fav_msg = self._update_favorites(filename, add=False)
+            if fav_changed:
+                changed = True
+            if fav_msg:
+                msg_parts.append(fav_msg)
 
             return changed, "; ".join(msg_parts) if msg_parts else None
         except Exception as e:
