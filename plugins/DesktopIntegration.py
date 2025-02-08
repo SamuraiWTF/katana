@@ -70,8 +70,10 @@ class DesktopIntegration(Plugin):
     def _update_favorites(self, filename: str, add: bool = True) -> Tuple[bool, Optional[str]]:
         """Update GNOME favorites using gsettings."""
         try:
+            print(f"Debug: Attempting to {'add to' if add else 'remove from'} favorites: {filename}")
             # Get current favorites
             result = self._run_as_user(['gsettings', 'get', 'org.gnome.shell', 'favorite-apps'])
+            print(f"Debug: Current favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
             if result.returncode != 0:
                 return False, "Failed to get current favorites"
             
@@ -79,10 +81,13 @@ class DesktopIntegration(Plugin):
             try:
                 # The output is typically in the format: ['app1.desktop', 'app2.desktop']
                 current = result.stdout.strip()
+                print(f"Debug: Raw favorites string: {current}")
                 if current.startswith('[') and current.endswith(']'):
                     current = current[1:-1]  # Remove [ and ]
                 current_favs = [x.strip("' ") for x in current.split(',') if x.strip("' ")]
-            except Exception:
+                print(f"Debug: Parsed favorites list: {current_favs}")
+            except Exception as e:
+                print(f"Debug: Failed to parse favorites: {str(e)}")
                 current_favs = []
             
             changed = False
@@ -96,13 +101,18 @@ class DesktopIntegration(Plugin):
             if changed:
                 # Convert back to gsettings format
                 favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
+                print(f"Debug: Setting new favorites: {favs_str}")
                 result = self._run_as_user(['gsettings', 'set', 'org.gnome.shell', 'favorite-apps', favs_str])
+                print(f"Debug: Set favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
                 if result.returncode == 0:
                     return True, "Updated GNOME favorites"
                 return False, "Failed to update favorites"
+            else:
+                print("Debug: No change needed for favorites")
             
             return False, "No change needed for favorites"
         except subprocess.SubprocessError as e:
+            print(f"Debug: Subprocess error in favorites: {str(e)}")
             return False, f"Failed to update favorites: {str(e)}"
 
     def install(self, params: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
