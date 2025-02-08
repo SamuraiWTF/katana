@@ -2,6 +2,7 @@ import os
 import pwd
 import subprocess
 import shutil
+import time
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from .Plugin import Plugin
@@ -77,6 +78,9 @@ class DesktopIntegration(Plugin):
             if result.returncode != 0:
                 return False, "Failed to get current favorites"
             
+            # Add a short delay after reading
+            time.sleep(1)
+            
             # Parse the current favorites string into a list
             try:
                 # The output is typically in the format: ['app1.desktop', 'app2.desktop']
@@ -102,8 +106,16 @@ class DesktopIntegration(Plugin):
                 # Convert back to gsettings format
                 favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
                 print(f"Debug: Setting new favorites: {favs_str}")
+                
+                # Add a short delay before setting
+                time.sleep(1)
+                
                 result = self._run_as_user(['gsettings', 'set', 'org.gnome.shell', 'favorite-apps', favs_str])
                 print(f"Debug: Set favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
+                
+                # Add a short delay after setting
+                time.sleep(1)
+                
                 if result.returncode == 0:
                     return True, "Updated GNOME favorites"
                 return False, "Failed to update favorites"
