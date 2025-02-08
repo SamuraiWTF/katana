@@ -1,4 +1,5 @@
 import os
+import pwd
 import subprocess
 import shutil
 from pathlib import Path
@@ -22,27 +23,60 @@ class DesktopIntegration(Plugin):
 
     def __init__(self):
         super().__init__()
-        self.apps_dir = Path.home() / '.local/share/applications'
+        # Get the real user's home directory (not root's)
+        sudo_user = os.environ.get('SUDO_USER', 'samurai')  # Default to samurai if not set
+        try:
+            self.user_home = Path(pwd.getpwnam(sudo_user).pw_dir)
+            self.real_user = sudo_user
+        except KeyError:
+            self.user_home = Path('/home/samurai')  # Fallback to samurai
+            self.real_user = 'samurai'
+        
+        self.apps_dir = self.user_home / '.local/share/applications'
         self.apps_dir.mkdir(parents=True, exist_ok=True)
+        # Ensure correct ownership
+        if os.geteuid() == 0:  # If running as root
+            uid = pwd.getpwnam(self.real_user).pw_uid
+            gid = pwd.getpwnam(self.real_user).pw_gid
+            os.chown(self.apps_dir, uid, gid)
+
+    def _run_as_user(self, cmd: list, check: bool = True) -> subprocess.CompletedProcess:
+        """Run a command as the real user instead of root."""
+        if os.geteuid() == 0:  # If we're root
+            cmd = ['runuser', '-u', self.real_user, '--'] + cmd
+        return subprocess.run(cmd, check=check)
 
     def _is_supported_environment(self) -> bool:
         """Check if we're in a supported desktop environment."""
         if os.name != 'posix':
             return False
         
-        if not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
-            return False
+        # Check for display as the real user
+        test_cmd = ['sh', '-c', 'echo $DISPLAY']
+        try:
+            display = self._run_as_user(test_cmd, check=False).stdout
+            if not display and not os.environ.get('WAYLAND_DISPLAY'):
+                return False
+        except subprocess.SubprocessError:
+            if not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
+                return False
 
         return True
 
     def _is_gnome(self) -> bool:
         """Check if running under GNOME."""
-        return os.environ.get('XDG_CURRENT_DESKTOP', '').lower() == 'gnome'
+        # Check XDG_CURRENT_DESKTOP as the real user
+        cmd = ['sh', '-c', 'echo $XDG_CURRENT_DESKTOP']
+        try:
+            desktop = self._run_as_user(cmd, check=False).stdout
+            return desktop and desktop.lower() == 'gnome'
+        except subprocess.SubprocessError:
+            return False
 
     def _update_desktop_database(self):
         """Update the desktop database if possible."""
         try:
-            subprocess.run(['update-desktop-database', str(self.apps_dir)], check=True)
+            self._run_as_user(['update-desktop-database', str(self.apps_dir)], check=True)
         except (subprocess.SubprocessError, FileNotFoundError):
             pass  # Best effort
 
@@ -52,12 +86,20 @@ class DesktopIntegration(Plugin):
             return False, "GNOME integration not available"
 
         try:
-            settings = Gio.Settings.new('org.gnome.shell')
-            current_favs = settings.get_strv('favorite-apps')
+            # Run gsettings as the real user
+            cmd = [
+                'gsettings', 'get', 'org.gnome.shell', 'favorite-apps'
+            ]
+            result = self._run_as_user(cmd, check=True)
+            current_favs = eval(result.stdout)  # Convert string repr of list to actual list
             
             if desktop_id not in current_favs:
                 current_favs.append(desktop_id)
-                settings.set_strv('favorite-apps', current_favs)
+                set_cmd = [
+                    'gsettings', 'set', 'org.gnome.shell', 'favorite-apps',
+                    str(current_favs)
+                ]
+                self._run_as_user(set_cmd, check=True)
                 return True, "Added to GNOME favorites"
             return False, "Already in favorites"
         except Exception as e:
@@ -105,14 +147,19 @@ class DesktopIntegration(Plugin):
             if changed:
                 desktop_path.write_text(content)
                 desktop_path.chmod(0o755)
+                # Ensure correct ownership
+                if os.geteuid() == 0:  # If running as root
+                    uid = pwd.getpwnam(self.real_user).pw_uid
+                    gid = pwd.getpwnam(self.real_user).pw_gid
+                    os.chown(desktop_path, uid, gid)
                 msg_parts.append("Desktop file created/updated")
 
-            # Try using xdg-desktop-menu first
+            # Try using xdg-desktop-menu as the real user
             try:
-                subprocess.run(['xdg-desktop-menu', 'install', '--novendor', str(desktop_path)], check=True)
+                self._run_as_user(['xdg-desktop-menu', 'install', '--novendor', str(desktop_path)])
                 msg_parts.append("Registered with desktop menu")
                 changed = True
-            except (subprocess.SubprocessError, FileNotFoundError):
+            except subprocess.SubprocessError:
                 self._update_desktop_database()
                 msg_parts.append("Updated desktop database")
 
@@ -150,10 +197,10 @@ class DesktopIntegration(Plugin):
         try:
             # Try using xdg-desktop-menu first
             try:
-                subprocess.run(['xdg-desktop-menu', 'uninstall', '--novendor', str(desktop_path)], check=True)
+                self._run_as_user(['xdg-desktop-menu', 'uninstall', '--novendor', str(desktop_path)])
                 msg_parts.append("Unregistered from desktop menu")
                 changed = True
-            except (subprocess.SubprocessError, FileNotFoundError):
+            except subprocess.SubprocessError:
                 if desktop_path.exists():
                     desktop_path.unlink()
                     changed = True
@@ -164,11 +211,17 @@ class DesktopIntegration(Plugin):
             # Remove from favorites if in GNOME
             if HAVE_GIO and self._is_gnome():
                 try:
-                    settings = Gio.Settings.new('org.gnome.shell')
-                    current_favs = settings.get_strv('favorite-apps')
+                    cmd = ['gsettings', 'get', 'org.gnome.shell', 'favorite-apps']
+                    result = self._run_as_user(cmd, check=True)
+                    current_favs = eval(result.stdout)
+                    
                     if filename in current_favs:
                         current_favs.remove(filename)
-                        settings.set_strv('favorite-apps', current_favs)
+                        set_cmd = [
+                            'gsettings', 'set', 'org.gnome.shell', 'favorite-apps',
+                            str(current_favs)
+                        ]
+                        self._run_as_user(set_cmd, check=True)
                         changed = True
                         msg_parts.append("Removed from GNOME favorites")
                 except Exception as e:
