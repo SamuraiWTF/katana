@@ -59,10 +59,8 @@ class DesktopIntegration(Plugin):
                     cmd = ['runuser', '-u', self.real_user, '--'] + cmd
                 return subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
             else:
-                print(f"Debug: dbus-launch failed: {dbus_result.stderr}")
                 return self._run_as_user(['gsettings'] + args)
         except FileNotFoundError:
-            print("Debug: dbus-launch not found, falling back to direct gsettings")
             return self._run_as_user(['gsettings'] + args)
 
     def _is_supported_environment(self) -> bool:
@@ -97,10 +95,8 @@ class DesktopIntegration(Plugin):
     def _update_favorites(self, filename: str, add: bool = True) -> Tuple[bool, Optional[str]]:
         """Update GNOME favorites using gsettings."""
         try:
-            print(f"Debug: Attempting to {'add to' if add else 'remove from'} favorites: {filename}")
             # Get current favorites
             result = self._run_gsettings_command(['get', 'org.gnome.shell', 'favorite-apps'])
-            print(f"Debug: Current favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
             if result.returncode != 0:
                 return False, "Failed to get current favorites"
             
@@ -112,17 +108,13 @@ class DesktopIntegration(Plugin):
                 # The output is typically in the format: ['app1.desktop', 'app2.desktop']
                 # Or @as [] for an empty list
                 current = result.stdout.strip()
-                print(f"Debug: Raw favorites string: {current}")
-                
                 if current == '@as []':
                     current_favs = []
                 else:
                     if current.startswith('[') and current.endswith(']'):
                         current = current[1:-1]  # Remove [ and ]
                     current_favs = [x.strip("' ") for x in current.split(',') if x.strip("' ")]
-                print(f"Debug: Parsed favorites list: {current_favs}")
-            except Exception as e:
-                print(f"Debug: Failed to parse favorites: {str(e)}")
+            except Exception:
                 current_favs = []
             
             # Update favorites list without checking if it changed
@@ -134,13 +126,11 @@ class DesktopIntegration(Plugin):
             
             # Convert to gsettings format and update
             favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
-            print(f"Debug: Setting new favorites: {favs_str}")
             
             # Add a short delay before setting
             time.sleep(1)
             
             result = self._run_gsettings_command(['set', 'org.gnome.shell', 'favorite-apps', favs_str])
-            print(f"Debug: Set favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
             
             # Add a short delay after setting
             time.sleep(1)
@@ -150,7 +140,6 @@ class DesktopIntegration(Plugin):
             return False, "Failed to update favorites"
             
         except subprocess.SubprocessError as e:
-            print(f"Debug: Subprocess error in favorites: {str(e)}")
             return False, f"Failed to update favorites: {str(e)}"
 
     def install(self, params: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
@@ -210,11 +199,9 @@ class DesktopIntegration(Plugin):
             # Try using xdg-desktop-menu as the real user
             try:
                 result = self._run_as_user(['xdg-desktop-menu', 'install', '--novendor', str(desktop_path)])
-                print(f"Debug: xdg-desktop-menu output:\nstdout: {result.stdout}\nstderr: {result.stderr}")
                 msg_parts.append("Registered with desktop menu")
                 changed = True
             except subprocess.SubprocessError as e:
-                print(f"Debug: xdg-desktop-menu failed: {str(e)}")
                 self._update_desktop_database()
                 msg_parts.append("Updated desktop database")
 
@@ -228,7 +215,6 @@ class DesktopIntegration(Plugin):
 
             return changed, "; ".join(msg_parts)
         except Exception as e:
-            print(f"Debug: Installation failed: {str(e)}")
             return False, f"Failed to install desktop file: {str(e)}"
 
     def remove(self, params: Dict[str, Any]) -> Tuple[bool, Optional[str]]:

@@ -8,6 +8,7 @@ install:
   - unarchive:
       url: https://github.com/zaproxy/zaproxy/releases/download/v2.16.0/ZAP_2.16.0_Linux.tar.gz
       dest: /opt/samurai/
+      cleanup: true
 
   - desktop:
       desktop_file:
@@ -31,11 +32,8 @@ remove:
   - desktop:
       filename: zap.desktop
 
-  - name: Remove ZAP directory
-    file:
-      path: /opt/samurai/ZAP_2.16.0
-      state: absent
-    become: yes
+  - shell:
+      cmd: rm -rf /opt/samurai/ZAP_2.16.0
 
 status:
   installed:

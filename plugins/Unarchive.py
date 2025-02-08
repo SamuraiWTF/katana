@@ -34,6 +34,14 @@ class Unarchive(Plugin):
             tar = tarfile.open(temp_file_name)
             tar.extractall(path=params.get('dest'))
             tar.close()
+
+            # Clean up the downloaded file if requested
+            if params.get('cleanup', False):
+                try:
+                    os.remove(temp_file_name)
+                except OSError as e:
+                    return True, f"Extraction successful but cleanup failed: {str(e)}"
+
             return True, None
         else:
             return False, "The file '{}' already exists, so this task was skipped.".format(temp_file_name)
