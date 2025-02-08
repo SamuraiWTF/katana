@@ -110,11 +110,16 @@ class DesktopIntegration(Plugin):
             # Parse the current favorites string into a list
             try:
                 # The output is typically in the format: ['app1.desktop', 'app2.desktop']
+                # Or @as [] for an empty list
                 current = result.stdout.strip()
                 print(f"Debug: Raw favorites string: {current}")
-                if current.startswith('[') and current.endswith(']'):
-                    current = current[1:-1]  # Remove [ and ]
-                current_favs = [x.strip("' ") for x in current.split(',') if x.strip("' ")]
+                
+                if current == '@as []':
+                    current_favs = []
+                else:
+                    if current.startswith('[') and current.endswith(']'):
+                        current = current[1:-1]  # Remove [ and ]
+                    current_favs = [x.strip("' ") for x in current.split(',') if x.strip("' ")]
                 print(f"Debug: Parsed favorites list: {current_favs}")
             except Exception as e:
                 print(f"Debug: Failed to parse favorites: {str(e)}")
