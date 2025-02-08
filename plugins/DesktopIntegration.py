@@ -125,35 +125,30 @@ class DesktopIntegration(Plugin):
                 print(f"Debug: Failed to parse favorites: {str(e)}")
                 current_favs = []
             
-            changed = False
-            if add and filename not in current_favs:
-                current_favs.append(filename)
-                changed = True
-            elif not add and filename in current_favs:
-                current_favs.remove(filename)
-                changed = True
-            
-            if changed:
-                # Convert back to gsettings format
-                favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
-                print(f"Debug: Setting new favorites: {favs_str}")
-                
-                # Add a short delay before setting
-                time.sleep(1)
-                
-                result = self._run_gsettings_command(['set', 'org.gnome.shell', 'favorite-apps', favs_str])
-                print(f"Debug: Set favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
-                
-                # Add a short delay after setting
-                time.sleep(1)
-                
-                if result.returncode == 0:
-                    return True, "Updated GNOME favorites"
-                return False, "Failed to update favorites"
+            # Update favorites list without checking if it changed
+            if add:
+                if filename not in current_favs:
+                    current_favs.append(filename)
             else:
-                print("Debug: No change needed for favorites")
+                current_favs = [x for x in current_favs if x != filename]
             
-            return False, "No change needed for favorites"
+            # Convert to gsettings format and update
+            favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
+            print(f"Debug: Setting new favorites: {favs_str}")
+            
+            # Add a short delay before setting
+            time.sleep(1)
+            
+            result = self._run_gsettings_command(['set', 'org.gnome.shell', 'favorite-apps', favs_str])
+            print(f"Debug: Set favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
+            
+            # Add a short delay after setting
+            time.sleep(1)
+            
+            if result.returncode == 0:
+                return True, "Updated GNOME favorites"
+            return False, "Failed to update favorites"
+            
         except subprocess.SubprocessError as e:
             print(f"Debug: Subprocess error in favorites: {str(e)}")
             return False, f"Failed to update favorites: {str(e)}"
