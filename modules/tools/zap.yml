@@ -31,9 +31,8 @@ install:
 remove:
   - desktop:
       filename: zap.desktop
-
-  - shell:
-      cmd: rm -rf /opt/samurai/ZAP_2.16.0
+  - rm:
+    path: /tmp/ZAP_2.16.0_Linux.tar.gz
 
 status:
   installed:
