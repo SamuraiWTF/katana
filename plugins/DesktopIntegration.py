@@ -113,30 +113,51 @@ class DesktopIntegration(Plugin):
                 else:
                     if current.startswith('[') and current.endswith(']'):
                         current = current[1:-1]  # Remove [ and ]
+                    # Split and clean each item, filtering out empty strings
                     current_favs = [x.strip("' ") for x in current.split(',') if x.strip("' ")]
-            except Exception:
+                    # Remove any empty strings that might have slipped through
+                    current_favs = [x for x in current_favs if x]
+            except Exception as e:
+                print(f"Warning: Error parsing favorites ({str(e)}), starting with empty list")
                 current_favs = []
+
+            print(f"Current favorites: {current_favs}")
             
-            # Update favorites list without checking if it changed
+            # Update favorites list and track if changes were made
+            changed = False
             if add:
                 if filename not in current_favs:
                     current_favs.append(filename)
+                    changed = True
+                    print(f"Adding {filename} to favorites")
+                else:
+                    print(f"Note: {filename} is already in favorites")
             else:
-                current_favs = [x for x in current_favs if x != filename]
+                if filename in current_favs:
+                    current_favs = [x for x in current_favs if x != filename]
+                    changed = True
+                    print(f"Removing {filename} from favorites")
+                else:
+                    print(f"Note: {filename} was not in favorites")
             
             # Convert to gsettings format and update
             favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
+            print(f"Updating favorites to: {favs_str}")
             
             # Add a short delay before setting
             time.sleep(1)
             
+            # Always run the set command due to gsettings caching
             result = self._run_gsettings_command(['set', 'org.gnome.shell', 'favorite-apps', favs_str])
             
             # Add a short delay after setting
             time.sleep(1)
             
             if result.returncode == 0:
-                return True, "Updated GNOME favorites"
+                if changed:
+                    return True, "Updated GNOME favorites"
+                else:
+                    return True, "Refreshed GNOME favorites (no changes needed)"
             return False, "Failed to update favorites"
             
         except subprocess.SubprocessError as e:
