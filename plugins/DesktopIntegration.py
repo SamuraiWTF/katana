@@ -89,9 +89,27 @@ class DesktopIntegration(Plugin):
     def _update_desktop_database(self):
         """Update the desktop database if possible."""
         try:
+            # Update both system and user databases
+            if os.geteuid() == 0:
+                # System-wide update
+                subprocess.run(['update-desktop-database'], check=True)
+            
+            # User-specific update
             self._run_as_user(['update-desktop-database', str(self.apps_dir)], check=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pass  # Best effort
+            
+            # Also try updating the cached applications
+            self._run_as_user(['gtk-update-icon-cache', '-f', '-t', str(self.user_home / '.local/share/icons')], check=False)
+            self._run_as_user(['xdg-desktop-menu', 'forceupdate'], check=False)
+        except (subprocess.SubprocessError, FileNotFoundError) as e:
+            print(f"Warning: desktop database update failed: {str(e)}")
+
+    def _validate_desktop_file(self, content: str) -> Tuple[bool, Optional[str]]:
+        """Validate desktop file content."""
+        required_fields = ['Type', 'Name', 'Exec']
+        missing = [field for field in required_fields if f"{field}=" not in content]
+        if missing:
+            return False, f"Missing required fields: {', '.join(missing)}"
+        return True, None
 
     def _add_to_gnome_favorites(self, desktop_id: str) -> Tuple[bool, Optional[str]]:
         """Add an application to GNOME favorites."""
@@ -124,6 +142,12 @@ class DesktopIntegration(Plugin):
         self._validate_params(params, required_params, 'desktop')
         
         if not self._is_supported_environment():
+            print(f"Debug: Display={os.environ.get('DISPLAY')}, Wayland={os.environ.get('WAYLAND_DISPLAY')}")
+            try:
+                result = self._run_as_user(['sh', '-c', 'env | grep -E "DISPLAY|WAYLAND|DESKTOP"'])
+                print(f"Debug: User environment:\n{result.stdout}")
+            except:
+                pass
             return False, "Not a supported desktop environment"
         
         desktop_file = params.get('desktop_file')
@@ -136,6 +160,11 @@ class DesktopIntegration(Plugin):
 
         if not content or not filename:
             return False, "Missing required desktop file content or filename"
+
+        # Validate desktop file content
+        is_valid, error = self._validate_desktop_file(content)
+        if not is_valid:
+            return False, f"Invalid desktop file: {error}"
 
         # Ensure filename has .desktop extension
         if not filename.endswith('.desktop'):
@@ -167,12 +196,21 @@ class DesktopIntegration(Plugin):
                     os.chown(desktop_path, uid, gid)
                 msg_parts.append("Desktop file created/updated")
 
+                # Debug: show file contents and permissions
+                print(f"Debug: Desktop file path: {desktop_path}")
+                print(f"Debug: Desktop file contents:\n{content}")
+                if desktop_path.exists():
+                    print(f"Debug: File permissions: {oct(desktop_path.stat().st_mode)}")
+                    print(f"Debug: File owner: {desktop_path.stat().st_uid}:{desktop_path.stat().st_gid}")
+
             # Try using xdg-desktop-menu as the real user
             try:
-                self._run_as_user(['xdg-desktop-menu', 'install', '--novendor', str(desktop_path)])
+                result = self._run_as_user(['xdg-desktop-menu', 'install', '--novendor', str(desktop_path)])
+                print(f"Debug: xdg-desktop-menu output:\nstdout: {result.stdout}\nstderr: {result.stderr}")
                 msg_parts.append("Registered with desktop menu")
                 changed = True
-            except subprocess.SubprocessError:
+            except subprocess.SubprocessError as e:
+                print(f"Debug: xdg-desktop-menu failed: {str(e)}")
                 self._update_desktop_database()
                 msg_parts.append("Updated desktop database")
 
@@ -186,6 +224,7 @@ class DesktopIntegration(Plugin):
 
             return changed, "; ".join(msg_parts)
         except Exception as e:
+            print(f"Debug: Installation failed: {str(e)}")
             return False, f"Failed to install desktop file: {str(e)}"
 
     def remove(self, params: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
