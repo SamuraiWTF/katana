@@ -39,6 +39,32 @@ class DesktopIntegration(Plugin):
             cmd = ['runuser', '-u', self.real_user, '--'] + cmd
         return subprocess.run(cmd, check=check, text=True, capture_output=True)
 
+    def _run_gsettings_command(self, args: list) -> subprocess.CompletedProcess:
+        """Run a gsettings command with proper dbus setup."""
+        try:
+            # Try to get the dbus session address
+            dbus_cmd = ['dbus-launch']
+            dbus_result = subprocess.run(dbus_cmd, capture_output=True, text=True)
+            if dbus_result.returncode == 0:
+                # Parse dbus-launch output to get DBUS_SESSION_BUS_ADDRESS
+                env = os.environ.copy()
+                for line in dbus_result.stdout.splitlines():
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        env[key] = value.rstrip(';')
+                
+                # Run gsettings with the dbus environment
+                cmd = ['gsettings'] + args
+                if os.geteuid() == 0:  # If we're root
+                    cmd = ['runuser', '-u', self.real_user, '--'] + cmd
+                return subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
+            else:
+                print(f"Debug: dbus-launch failed: {dbus_result.stderr}")
+                return self._run_as_user(['gsettings'] + args)
+        except FileNotFoundError:
+            print("Debug: dbus-launch not found, falling back to direct gsettings")
+            return self._run_as_user(['gsettings'] + args)
+
     def _is_supported_environment(self) -> bool:
         """Check if we're in a supported environment."""
         return os.name == 'posix'
@@ -73,7 +99,7 @@ class DesktopIntegration(Plugin):
         try:
             print(f"Debug: Attempting to {'add to' if add else 'remove from'} favorites: {filename}")
             # Get current favorites
-            result = self._run_as_user(['gsettings', 'get', 'org.gnome.shell', 'favorite-apps'])
+            result = self._run_gsettings_command(['get', 'org.gnome.shell', 'favorite-apps'])
             print(f"Debug: Current favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
             if result.returncode != 0:
                 return False, "Failed to get current favorites"
@@ -110,7 +136,7 @@ class DesktopIntegration(Plugin):
                 # Add a short delay before setting
                 time.sleep(1)
                 
-                result = self._run_as_user(['gsettings', 'set', 'org.gnome.shell', 'favorite-apps', favs_str])
+                result = self._run_gsettings_command(['set', 'org.gnome.shell', 'favorite-apps', favs_str])
                 print(f"Debug: Set favorites result: stdout={result.stdout}, stderr={result.stderr}, rc={result.returncode}")
                 
                 # Add a short delay after setting
