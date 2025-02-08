@@ -121,12 +121,16 @@ class DesktopIntegration(Plugin):
                 print(f"Warning: Error parsing favorites ({str(e)}), starting with empty list")
                 current_favs = []
             
-            # Update favorites list without checking if it changed
+            # Update favorites list and track changes
+            changed = False
             if add:
                 if filename not in current_favs:
                     current_favs.append(filename)
+                    changed = True
             else:
-                current_favs = [x for x in current_favs if x != filename]
+                if filename in current_favs:
+                    current_favs = [x for x in current_favs if x != filename]
+                    changed = True
             
             # Convert to gsettings format and update
             favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
