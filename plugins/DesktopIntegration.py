@@ -44,7 +44,7 @@ class DesktopIntegration(Plugin):
         """Run a command as the real user instead of root."""
         if os.geteuid() == 0:  # If we're root
             cmd = ['runuser', '-u', self.real_user, '--'] + cmd
-        return subprocess.run(cmd, check=check)
+        return subprocess.run(cmd, check=check, text=True, capture_output=True)
 
     def _is_supported_environment(self) -> bool:
         """Check if we're in a supported desktop environment."""
@@ -52,26 +52,39 @@ class DesktopIntegration(Plugin):
             return False
         
         # Check for display as the real user
-        test_cmd = ['sh', '-c', 'echo $DISPLAY']
         try:
-            display = self._run_as_user(test_cmd, check=False).stdout
-            if not display and not os.environ.get('WAYLAND_DISPLAY'):
-                return False
+            # Try to get DISPLAY from the user's environment
+            result = self._run_as_user(['sh', '-c', 'echo $DISPLAY'], check=False)
+            display = result.stdout.strip() if result.stdout else None
+            
+            # Try to get WAYLAND_DISPLAY from the user's environment
+            result = self._run_as_user(['sh', '-c', 'echo $WAYLAND_DISPLAY'], check=False)
+            wayland = result.stdout.strip() if result.stdout else None
+            
+            if not display and not wayland:
+                # Fall back to current environment if needed
+                display = os.environ.get('DISPLAY')
+                wayland = os.environ.get('WAYLAND_DISPLAY')
+                
+            return bool(display or wayland)
         except subprocess.SubprocessError:
-            if not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
-                return False
-
-        return True
+            # Fall back to checking current environment
+            return bool(os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY'))
 
     def _is_gnome(self) -> bool:
         """Check if running under GNOME."""
-        # Check XDG_CURRENT_DESKTOP as the real user
-        cmd = ['sh', '-c', 'echo $XDG_CURRENT_DESKTOP']
         try:
-            desktop = self._run_as_user(cmd, check=False).stdout
-            return desktop and desktop.lower() == 'gnome'
+            # Try to get XDG_CURRENT_DESKTOP from the user's environment
+            result = self._run_as_user(['sh', '-c', 'echo $XDG_CURRENT_DESKTOP'], check=False)
+            desktop = result.stdout.strip() if result.stdout else None
+            
+            # Fall back to current environment if needed
+            if not desktop:
+                desktop = os.environ.get('XDG_CURRENT_DESKTOP', '')
+                
+            return desktop.lower() == 'gnome'
         except subprocess.SubprocessError:
-            return False
+            return os.environ.get('XDG_CURRENT_DESKTOP', '').lower() == 'gnome'
 
     def _update_desktop_database(self):
         """Update the desktop database if possible."""
