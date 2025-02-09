@@ -1,0 +1,25 @@
+name: Full Test Suite
+
+on:
+  push:
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - 'setup.py'
+      - '.github/workflows/**'
+      - 'test/**'
+    branches: [ main ]
+  pull_request:
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - 'setup.py'
+      - '.github/workflows/**'
+      - 'test/**'
+    branches: [ main ]
+
+jobs:
+  test:
+    uses: ./.github/workflows/package-test.yaml
+    with:
+      package-name: 'all'
