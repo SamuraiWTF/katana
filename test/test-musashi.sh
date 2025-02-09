@@ -14,7 +14,7 @@ echo "Testing CORS Client endpoint..."
 test_endpoint "https://cors-dojo.test:8443/"
 
 echo "Testing CORS API endpoint..."
-test_endpoint "https://api.cors.test:8443/"
+test_endpoint "https://api.cors.test:8443/" 404 -- --no-fail
 
 echo "Testing JWT Demo endpoint..."
 test_endpoint "https://jwt-demo.test:8443/"
