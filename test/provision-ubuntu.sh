@@ -31,6 +31,7 @@ EOF
 fi
 
 apt-get install -y python3-pip git jq openjdk-17-jdk-headless nginx yarnpkg
+update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
 ln -sf /usr/bin/yarnpkg /usr/bin/yarn
 systemctl enable nginx
 systemctl start nginx
