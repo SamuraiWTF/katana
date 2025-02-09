@@ -17,15 +17,6 @@ if ! command -v docker; then
   apt-get update
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-  # Create docker-compose wrapper for compatibility
-  if [[ ! -x /usr/bin/docker-compose ]]; then
-    cat <<EOF > /usr/bin/docker-compose
-#!/bin/bash
-exec docker compose "\$@"
-EOF
-    chmod +x /usr/bin/docker-compose
-  fi
-
   systemctl enable docker
   systemctl start docker
   
@@ -37,6 +28,13 @@ EOF
     usermod -a -G docker $USER
   fi
 fi
+
+# Always ensure docker-compose wrapper exists and is executable
+cat <<EOF > /usr/local/bin/docker-compose
+#!/bin/bash
+exec docker compose "\$@"
+EOF
+chmod +x /usr/local/bin/docker-compose
 
 apt-get install -y python3-pip git jq openjdk-17-jdk-headless nginx yarnpkg
 update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
