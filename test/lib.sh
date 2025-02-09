@@ -13,9 +13,9 @@ test_endpoint() {
     local max_attempts=5
     local attempt=1
     local timeout=10
-    local curl_flags=""
+    local curl_flags="--fail --max-time $timeout"  # Always use --fail and timeout
     
-    # If we find -- in the arguments, everything after it becomes curl flags
+    # If we find -- in the arguments, everything after it becomes additional curl flags
     local found_separator=false
     for arg in "${@:3}"; do
         if [ "$arg" = "--" ]; then
@@ -29,7 +29,27 @@ test_endpoint() {
     
     while [ $attempt -le $max_attempts ]; do
         echo "Testing $url (attempt $attempt/$max_attempts)"
-        local response=$(curl -s -o /dev/null -w "%{http_code}" $curl_flags "$url")
+        
+        # Use curl in a way that captures both status code and connection errors
+        local output
+        local status
+        output=$(curl -s -w "\n%{http_code}" $curl_flags "$url" 2>&1)
+        status=$?
+        
+        # Extract the status code from the last line
+        local response=$(echo "$output" | tail -n1)
+        local content=$(echo "$output" | sed '$d')
+        
+        # Check for curl errors (connection refused, timeout, etc.)
+        if [ $status -ne 0 ]; then
+            echo "Connection failed: $content"
+            if [ $attempt -eq $max_attempts ]; then
+                return 1
+            fi
+            sleep $((2 ** (attempt - 1)))  # Exponential backoff: 1, 2, 4, 8, 16 seconds
+            attempt=$((attempt + 1))
+            continue
+        fi
         
         if [ -n "$expected_code" ]; then
             # Check for exact status code match
