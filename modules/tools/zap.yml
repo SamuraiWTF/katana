@@ -21,7 +21,7 @@ install:
           Type=Application
           Terminal=false
           Exec=/opt/samurai/ZAP_2.16.0/zap.sh
-          Name=ZAP
+          Name=ZAP 2.16
           Icon=/opt/katana/icons/zap.png
           Categories=samuraiwtf
           Comment=OWASP Interception proxy
