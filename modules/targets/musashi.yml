@@ -143,14 +143,18 @@ remove:
       hostname: 'csp-dojo.test'
 
 start:
+  - service:
+      name: docker
+      state: running
   - docker:
       name: musashi
-      state: running
 
 stop:
+  - service:
+      name: docker
+      state: running
   - docker:
       name: musashi
-      state: stopped
 
 status:
   running:
