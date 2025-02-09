@@ -11,7 +11,34 @@ on:
     branches: [ main ]
 
 jobs:
+  check-full-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        run: |
+          # Check if any paths that trigger full tests were changed
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            FULL_TEST_CHANGES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.py$|requirements.txt|setup.py|\.github/workflows/|test/' || true)
+          else
+            FULL_TEST_CHANGES=$(git diff --name-only HEAD^ HEAD | grep -E '\.py$|requirements.txt|setup.py|\.github/workflows/|test/' || true)
+          fi
+          
+          if [ -z "$FULL_TEST_CHANGES" ]; then
+            echo "Full test suite not triggered, should run module tests"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "Full test suite will run, skipping module tests"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
   determine-tests:
+    needs: check-full-tests
+    if: needs.check-full-tests.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -56,7 +83,8 @@ jobs:
           echo "matrix={\"package\":$PACKAGES}" >> $GITHUB_OUTPUT
 
   run-tests:
-    needs: determine-tests
+    needs: [check-full-tests, determine-tests]
+    if: needs.check-full-tests.outputs.should-run == 'true'
     uses: ./.github/workflows/package-test.yaml
     strategy:
       matrix: ${{fromJson(needs.determine-tests.outputs.matrix)}}
