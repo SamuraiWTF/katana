@@ -154,8 +154,8 @@ stop:
 
 status:
   running:
-    running:
+    started:
       docker: musashi
   installed:
     exists:
-      path: /var/run/docker.sock
+      docker: musashi
