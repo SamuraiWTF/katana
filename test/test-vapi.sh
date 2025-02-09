@@ -2,15 +2,18 @@
 
 set -e
 
-katana install vapi
-sleep 2
-katana start vapi
+# Source common test utilities
+source "$(dirname "$0")/lib.sh"
 
-curl --fail -o /dev/null --retry 5 --retry-all-errors http://localhost:8000/
-curl --fail -o /dev/null --retry 5 --retry-all-errors -k https://vapi.test:8443/
+# Install and start the service
+install_package vapi
+start_package vapi
 
-katana stop vapi
-sleep 2
-katana remove vapi
+# Test the endpoint
+echo "Testing VAPI endpoint..."
+test_endpoint "https://vapi.test:8443/"
+
+# Cleanup
+cleanup_package vapi
 
 echo -e "\nPASSED\n"
