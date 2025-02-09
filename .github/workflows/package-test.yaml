@@ -30,5 +30,8 @@ jobs:
       - name: Setup test environment
         run: sudo ./test/provision-ubuntu.sh
 
+      - name: Make test script executable
+        run: sudo chmod +x ./test/test-${{ inputs.package-name }}.sh
+
       - name: Run tests
         run: sudo ./test/test-${{ inputs.package-name }}.sh
