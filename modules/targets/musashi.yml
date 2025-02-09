@@ -6,170 +6,156 @@ description: A set of labs for understanding modern application features.
 href: https://cors-dojo.test:8443
 
 install:
-  - name: Get the latest release of musashi
-    git:
-      repo: https://github.com/SamuraiWTF/musashi-js.git
-      dest: /opt/targets/musashi
+  - name: Make sure docker service is running
+    service:
+      name: docker
+      state: running
 
-  - name: Install musashi with yarn
-    yarn:
-      path: /opt/targets/musashi
+  - name: Install Musashi docker container
+    docker:
+      name: musashi
+      image: ghcr.io/samuraiwtf/musashi-js:latest
+      env:
+        CORS_API_PORT: "3020"
+        CORS_API_HOST: "api.cors.test"
+        CORS_API_PROXY_PORT: "8443"
+        CORS_CLIENT_HOST: "cors-dojo.test"
+        CORS_CLIENT_PORT: "3021"
+        OAUTH_PROVIDER_PORT: "3030"
+        OAUTH_CLIENT_PORT: "3031"
+        CSP_APP_PORT: "3041"
+        JWT_HOST: "jwt-demo.test"
+        JWT_PORT: "3050"
+        USE_TLS: "TRUE"
+      ports:
+        3020/tcp: 3020  # CORS API
+        3021/tcp: 3021  # CORS Client
+        3030/tcp: 3030  # OAuth Provider
+        3031/tcp: 3031  # OAuth Client
+        3041/tcp: 3041  # CSP Demo
+        3050/tcp: 3050  # JWT Demo
 
-  - name: Script to start Musashi
-    copy:
-      dest: /usr/local/bin/start_musashi.sh
-      content: |
-        #!/bin/bash
-        cd /opt/targets/musashi
-        exec yarn start
-      mode: 0744
-
-  - name: Create service descriptor for wtf-musashi.service
-    copy:
-      dest: /etc/systemd/system/wtf-musashi.service
-      content: |
-        [Unit]
-        Description=Musashi Target service
-        After=network.target
-
-        [Service]
-        Type=simple
-        User=root
-        WorkingDirectory=/opt/targets/musashi
-        ExecStart=/usr/local/bin/start_musashi.sh
-        Restart=on-failure
-        RestartSec=5
-        StandardOutput=syslog
-        StandardError=syslog
-        SyslogIdentifier=musashi
-
-        [Install]
-        WantedBy=multi-user.target
-      mode: 0744
-
-  - name: Generate musashi .env file
-    copy:
-      dest: /opt/targets/musashi/.env
-      content: |
-        CORS_API_PORT=3020
-        CORS_API_HOST=api.cors.test
-        CORS_API_PROXY_PORT=8443
-        CORS_CLIENT_HOST=cors-dojo.test
-        CORS_CLIENT_PORT=3021
-        OAUTH_PROVIDER_PORT=3030
-        OAUTH_CLIENT_PORT=3031
-        CSP_APP_PORT=3041
-        USE_TLS=TRUE
-      mode: 0744
-
-  - name: Setup hosts file entry for cors-dojo
+  - name: Setup hosts file entries for CORS API
     lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.8   cors-dojo.test'
+      line: '127.0.0.1   api.cors.test'
 
-  - name: Setup hosts file entries for api.cors
+  - name: Setup hosts file entries for CORS Client
     lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.9   api.cors.test'
+      line: '127.0.0.1   cors-dojo.test'
 
-  - name: Setup hosts file entry for csp-dojo
+  - name: Setup hosts file entries for JWT Demo
     lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.8   csp-dojo.test'
+      line: '127.0.0.1   jwt-demo.test'
 
-  - name: Setup hosts file entry for jwt-demo
+  - name: Setup hosts file entries for CSP Demo
     lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.8   jwt-demo.test'
+      line: '127.0.0.1   csp-dojo.test'
 
-  - name: Setup nginx reverse-proxy config for CORS client
-    reverseproxy:
-      hostname: 'cors-dojo.test'
-      proxy_pass: 'http://localhost:3021'
-
-  - name: Setup nginx reverse-proxy config for CORS API
+  - name: Create nginx config for CORS API
     reverseproxy:
       hostname: 'api.cors.test'
       proxy_pass: 'http://localhost:3020'
+      ssl: true
+      headers:
+        - 'proxy_set_header X-Forwarded-Proto $scheme'
+        - 'proxy_set_header X-Forwarded-Port 8443'
 
-  - name: Setup nginx reverse-proxy config for CSP dojo
+  - name: Create nginx config for CORS Client
     reverseproxy:
-      hostname: 'csp-dojo.test'
-      proxy_pass: 'http://localhost:3041'
+      hostname: 'cors-dojo.test'
+      proxy_pass: 'http://localhost:3021'
+      ssl: true
+      headers:
+        - 'proxy_set_header X-Forwarded-Proto $scheme'
+        - 'proxy_set_header X-Forwarded-Port 8443'
 
-  - name: Setup nginx reverse-proxy config for JWT demo
+  - name: Create nginx config for JWT Demo
     reverseproxy:
       hostname: 'jwt-demo.test'
       proxy_pass: 'http://localhost:3050'
+      ssl: true
+      headers:
+        - 'proxy_set_header X-Forwarded-Proto $scheme'
+        - 'proxy_set_header X-Forwarded-Port 8443'
+
+  - name: Create nginx config for CSP Demo
+    reverseproxy:
+      hostname: 'csp-dojo.test'
+      proxy_pass: 'http://localhost:3041'
+      ssl: true
+      headers:
+        - 'proxy_set_header X-Forwarded-Proto $scheme'
+        - 'proxy_set_header X-Forwarded-Port 8443'
 
   - service:
       name: nginx
       state: restarted
-  - command:
-      cmd: systemctl daemon-reload
 
 remove:
   - service:
-      name: wtf-musashi
-      state: stopped
-  - rm:
-      path:
-        - /opt/targets/musashi
-        - /usr/local/bin/start_musashi.sh
-        - /etc/systemd/system/wtf-musashi.service
-        - /opt/targets/musashi/.env
+      name: docker
+      state: running
+  - docker:
+      name: musashi
 
-  - lineinfile:
+  - name: Remove hosts file entries for CORS API
+    lineinfile:
       dest: /etc/hosts
-      line: '127.0.0.8   cors-dojo.test'
-      state: absent
-  - lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   api.cors.test'
-      state: absent
-  - lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   csp-dojo.test'
-      state: absent
-  - lineinfile:
-      dest: /etc/hosts
-      line: '127.0.0.8   jwt-demo.test'
+      line: '127.0.0.1   api.cors.test'
       state: absent
 
-  - name: Remove nginx reverse-proxy config for CORS client
-    reverseproxy:
-      hostname: 'cors-dojo.test'
-  - name: Remove nginx reverse-proxy config for CORS API
+  - name: Remove hosts file entries for CORS Client
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   cors-dojo.test'
+      state: absent
+
+  - name: Remove hosts file entries for JWT Demo
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   jwt-demo.test'
+      state: absent
+
+  - name: Remove hosts file entries for CSP Demo
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   csp-dojo.test'
+      state: absent
+
+  - name: Remove nginx config for CORS API
     reverseproxy:
       hostname: 'api.cors.test'
-  - name: Remove nginx reverse-proxy config for CSP dojo
+
+  - name: Remove nginx config for CORS Client
     reverseproxy:
-      hostname: 'csp-dojo.test'
-  - name: Remove nginx reverse-proxy config for JWT demo
+      hostname: 'cors-dojo.test'
+
+  - name: Remove nginx config for JWT Demo
     reverseproxy:
       hostname: 'jwt-demo.test'
 
-  - service:
-      name: nginx
-      state: restarted
-  - command:
-      cmd: systemctl daemon-reload
-
+  - name: Remove nginx config for CSP Demo
+    reverseproxy:
+      hostname: 'csp-dojo.test'
 
 start:
-  - service:
-      name: wtf-musashi
+  - docker:
+      name: musashi
       state: running
 
 stop:
-  - service:
-      name: wtf-musashi
+  - docker:
+      name: musashi
       state: stopped
 
 status:
   running:
-    started:
-      service: wtf-musashi
+    running:
+      docker: musashi
   installed:
     exists:
-      path: /opt/targets/musashi
+      path: /var/run/docker.sock
