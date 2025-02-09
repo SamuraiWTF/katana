@@ -40,48 +40,11 @@ class DesktopIntegration(Plugin):
         return subprocess.run(cmd, check=check, text=True, capture_output=True)
 
     def _run_gsettings_command(self, args: list) -> subprocess.CompletedProcess:
-        """Run a gsettings command with proper dbus setup."""
-        try:
-            env = os.environ.copy()
-            
-            # First try to use an existing dbus session
-            if 'DBUS_SESSION_BUS_ADDRESS' not in env:
-                # Try to run the command in a new dbus session
-                cmd = ['dbus-run-session', '--']
-                if os.geteuid() == 0:  # If we're root
-                    cmd.extend(['runuser', '-u', self.real_user, '--'])
-                cmd.extend(['gsettings'] + args)
-                
-                # Ensure we have a display for gsettings
-                if 'DISPLAY' not in env:
-                    env['DISPLAY'] = ':0'
-                
-                # Also ensure XDG_RUNTIME_DIR is set correctly for the real user if we're root
-                if os.geteuid() == 0:
-                    env['XDG_RUNTIME_DIR'] = f'/run/user/{pwd.getpwnam(self.real_user).pw_uid}'
-                
-                return subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
-            
-            # If we have a DBUS session, just run gsettings directly
-            cmd = ['gsettings'] + args
-            if os.geteuid() == 0:  # If we're root
-                cmd = ['runuser', '-u', self.real_user, '--'] + cmd
-                env['XDG_RUNTIME_DIR'] = f'/run/user/{pwd.getpwnam(self.real_user).pw_uid}'
-            
-            if 'DISPLAY' not in env:
-                env['DISPLAY'] = ':0'
-            
-            result = subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
-            
-            if result.returncode != 0:
-                print(f"Warning: gsettings command failed: {result.stderr}")
-            
-            return result
-            
-        except Exception as e:
-            print(f"Warning: Error running gsettings: {str(e)}")
-            # Fall back to basic gsettings command
-            return self._run_as_user(['gsettings'] + args)
+        """Run a gsettings command."""
+        cmd = ['gsettings'] + args
+        if os.geteuid() == 0:  # If we're root
+            cmd = ['runuser', '-u', self.real_user, '--'] + cmd
+        return subprocess.run(cmd, check=False, text=True, capture_output=True)
 
     def _is_supported_environment(self) -> bool:
         """Check if we're in a supported environment."""
