@@ -46,30 +46,31 @@ class DesktopIntegration(Plugin):
             
             # First try to use an existing dbus session
             if 'DBUS_SESSION_BUS_ADDRESS' not in env:
-                # Try to get the dbus session address
-                dbus_cmd = ['dbus-launch', '--autolaunch=$(dbus-uuidgen)']
-                dbus_result = subprocess.run(dbus_cmd, capture_output=True, text=True)
-                if dbus_result.returncode == 0:
-                    # Parse dbus-launch output to get DBUS_SESSION_BUS_ADDRESS
-                    for line in dbus_result.stdout.splitlines():
-                        if '=' in line:
-                            key, value = line.split('=', 1)
-                            env[key] = value.rstrip(';')
+                # Try to run the command in a new dbus session
+                cmd = ['dbus-run-session', '--']
+                if os.geteuid() == 0:  # If we're root
+                    cmd.extend(['runuser', '-u', self.real_user, '--'])
+                cmd.extend(['gsettings'] + args)
+                
+                # Ensure we have a display for gsettings
+                if 'DISPLAY' not in env:
+                    env['DISPLAY'] = ':0'
+                
+                # Also ensure XDG_RUNTIME_DIR is set correctly for the real user if we're root
+                if os.geteuid() == 0:
+                    env['XDG_RUNTIME_DIR'] = f'/run/user/{pwd.getpwnam(self.real_user).pw_uid}'
+                
+                return subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
             
-            # Ensure we have a display for gsettings
+            # If we have a DBUS session, just run gsettings directly
+            cmd = ['gsettings'] + args
+            if os.geteuid() == 0:  # If we're root
+                cmd = ['runuser', '-u', self.real_user, '--'] + cmd
+                env['XDG_RUNTIME_DIR'] = f'/run/user/{pwd.getpwnam(self.real_user).pw_uid}'
+            
             if 'DISPLAY' not in env:
                 env['DISPLAY'] = ':0'
             
-            # Run gsettings with the dbus environment
-            cmd = ['gsettings'] + args
-            if os.geteuid() == 0:  # If we're root
-                # When running as root, we need to switch to the real user
-                cmd = ['runuser', '-u', self.real_user, '--'] + cmd
-                
-                # Also ensure XDG_RUNTIME_DIR is set correctly for the real user
-                env['XDG_RUNTIME_DIR'] = f'/run/user/{pwd.getpwnam(self.real_user).pw_uid}'
-            
-            # Try running the command
             result = subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
             
             if result.returncode != 0:
