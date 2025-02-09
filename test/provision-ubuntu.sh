@@ -17,6 +17,7 @@ if ! command -v docker; then
   apt-get update
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+  # Create docker-compose wrapper for compatibility
   if [[ ! -x /usr/bin/docker-compose ]]; then
     cat <<EOF > /usr/bin/docker-compose
 #!/bin/bash
@@ -27,7 +28,14 @@ EOF
 
   systemctl enable docker
   systemctl start docker
-  usermod -a -G docker vagrant
+  
+  # Add current user to docker group if we're in Vagrant
+  if id vagrant &>/dev/null; then
+    usermod -a -G docker vagrant
+  elif [ -n "$GITHUB_ACTIONS" ]; then
+    # In GitHub Actions, add the runner user to docker group
+    usermod -a -G docker $USER
+  fi
 fi
 
 apt-get install -y python3-pip git jq openjdk-17-jdk-headless nginx yarnpkg
