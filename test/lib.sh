@@ -6,7 +6,7 @@
 # Arguments:
 #   $1: URL to test
 #   $2: Expected status code (optional, accepts 2xx/3xx if not specified)
-#   Additional flags can be passed after -- e.g., test_endpoint "https://example.com" 200 -- -k
+#   Additional flags can be passed after -- e.g., test_endpoint "https://example.com" 200 -- -H "Custom: Header"
 test_endpoint() {
     local url=$1
     local expected_code=$2
@@ -14,6 +14,11 @@ test_endpoint() {
     local attempt=1
     local timeout=10
     local curl_flags="--fail --max-time $timeout"  # Always use --fail and timeout
+    
+    # If URL starts with https://, automatically add -k
+    if [[ "$url" == https://* ]]; then
+        curl_flags="$curl_flags -k"
+    fi
     
     # If we find -- in the arguments, everything after it becomes additional curl flags
     local found_separator=false
@@ -29,6 +34,7 @@ test_endpoint() {
     
     while [ $attempt -le $max_attempts ]; do
         echo "Testing $url (attempt $attempt/$max_attempts)"
+        echo "Running: curl -s -w \"\n%{http_code}\" $curl_flags \"$url\""
         
         # Use curl in a way that captures both status code and connection errors
         local output
