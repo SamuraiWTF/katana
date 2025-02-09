@@ -20,9 +20,8 @@ install:
       dest: /usr/local/bin/start_musashi.sh
       content: |
         #!/bin/bash
-
         cd /opt/targets/musashi
-        yarn start &
+        exec yarn start
       mode: 0744
 
   - name: Create service descriptor for wtf-musashi.service
@@ -31,9 +30,19 @@ install:
       content: |
         [Unit]
         Description=Musashi Target service
+        After=network.target
+
         [Service]
-        Type=forking
+        Type=simple
+        User=root
+        WorkingDirectory=/opt/targets/musashi
         ExecStart=/usr/local/bin/start_musashi.sh
+        Restart=on-failure
+        RestartSec=5
+        StandardOutput=syslog
+        StandardError=syslog
+        SyslogIdentifier=musashi
+
         [Install]
         WantedBy=multi-user.target
       mode: 0744
