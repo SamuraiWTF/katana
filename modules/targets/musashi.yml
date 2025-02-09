@@ -17,14 +17,14 @@ install:
       image: ghcr.io/samuraiwtf/musashi-js:latest
       env:
         CORS_API_PORT: "3020"
-        CORS_API_HOST: "api.cors.test"
+        CORS_API_HOST: "api.cors.test:3020"
         CORS_API_PROXY_PORT: "8443"
-        CORS_CLIENT_HOST: "cors-dojo.test"
+        CORS_CLIENT_HOST: "cors-dojo.test:3021"
         CORS_CLIENT_PORT: "3021"
         OAUTH_PROVIDER_PORT: "3030"
         OAUTH_CLIENT_PORT: "3031"
         CSP_APP_PORT: "3041"
-        JWT_HOST: "jwt-demo.test"
+        JWT_HOST: "jwt-demo.test:3050"
         JWT_PORT: "3050"
         USE_TLS: "TRUE"
       ports:
