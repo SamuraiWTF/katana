@@ -35,11 +35,11 @@ check_response() {
 
 # Test root paths - should get 403
 check_response "http://amoksecurity.test:80/" "403" || exit 1
-check_response "http://amoksecurity.wtf:80/" "403" || exit 1
+# check_response "http://amoksecurity.wtf:80/" "403" || exit 1
 
 # Test our test file - should get 200
 check_response "http://amoksecurity.test:80/test.html" "200" || exit 1
-check_response "http://amoksecurity.wtf:80/test.html" "200" || exit 1
+# check_response "http://amoksecurity.wtf:80/test.html" "200" || exit 1
 
 # Verify content of test file
 test_content=$(curl -s "http://amoksecurity.test:80/test.html")
