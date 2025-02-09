@@ -106,27 +106,27 @@ class DesktopIntegration(Plugin):
             
             # Update favorites list and track changes
             changed = False
-            print(f"Current favorites: {current_favs}")
+            # print(f"Current favorites: {current_favs}")
             
             if add:
                 if filename not in current_favs:
                     current_favs.append(filename)
                     changed = True
-                    print(f"Adding {filename} to favorites")
+                    # print(f"Adding {filename} to favorites")
                 else:
                     print(f"Note: {filename} is already in favorites")
             else:
                 if filename in current_favs:
                     current_favs = [x for x in current_favs if x != filename]
                     changed = True
-                    print(f"Removing {filename} from favorites")
+                    # print(f"Removing {filename} from favorites")
                 else:
                     print(f"Note: {filename} was not in favorites")
             
             # Convert to gsettings format and update
             # Ensure each item is properly quoted
             favs_str = "[" + ", ".join(f"'{x}'" for x in current_favs) + "]"
-            print(f"Setting favorites to: {favs_str}")
+            # print(f"Setting favorites to: {favs_str}")
             
             # Add a short delay before setting
             time.sleep(1)
