@@ -42,25 +42,44 @@ class DesktopIntegration(Plugin):
     def _run_gsettings_command(self, args: list) -> subprocess.CompletedProcess:
         """Run a gsettings command with proper dbus setup."""
         try:
-            # Try to get the dbus session address
-            dbus_cmd = ['dbus-launch']
-            dbus_result = subprocess.run(dbus_cmd, capture_output=True, text=True)
-            if dbus_result.returncode == 0:
-                # Parse dbus-launch output to get DBUS_SESSION_BUS_ADDRESS
-                env = os.environ.copy()
-                for line in dbus_result.stdout.splitlines():
-                    if '=' in line:
-                        key, value = line.split('=', 1)
-                        env[key] = value.rstrip(';')
+            env = os.environ.copy()
+            
+            # First try to use an existing dbus session
+            if 'DBUS_SESSION_BUS_ADDRESS' not in env:
+                # Try to get the dbus session address
+                dbus_cmd = ['dbus-launch', '--autolaunch=$(dbus-uuidgen)']
+                dbus_result = subprocess.run(dbus_cmd, capture_output=True, text=True)
+                if dbus_result.returncode == 0:
+                    # Parse dbus-launch output to get DBUS_SESSION_BUS_ADDRESS
+                    for line in dbus_result.stdout.splitlines():
+                        if '=' in line:
+                            key, value = line.split('=', 1)
+                            env[key] = value.rstrip(';')
+            
+            # Ensure we have a display for gsettings
+            if 'DISPLAY' not in env:
+                env['DISPLAY'] = ':0'
+            
+            # Run gsettings with the dbus environment
+            cmd = ['gsettings'] + args
+            if os.geteuid() == 0:  # If we're root
+                # When running as root, we need to switch to the real user
+                cmd = ['runuser', '-u', self.real_user, '--'] + cmd
                 
-                # Run gsettings with the dbus environment
-                cmd = ['gsettings'] + args
-                if os.geteuid() == 0:  # If we're root
-                    cmd = ['runuser', '-u', self.real_user, '--'] + cmd
-                return subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
-            else:
-                return self._run_as_user(['gsettings'] + args)
-        except FileNotFoundError:
+                # Also ensure XDG_RUNTIME_DIR is set correctly for the real user
+                env['XDG_RUNTIME_DIR'] = f'/run/user/{pwd.getpwnam(self.real_user).pw_uid}'
+            
+            # Try running the command
+            result = subprocess.run(cmd, env=env, check=False, text=True, capture_output=True)
+            
+            if result.returncode != 0:
+                print(f"Warning: gsettings command failed: {result.stderr}")
+            
+            return result
+            
+        except Exception as e:
+            print(f"Warning: Error running gsettings: {str(e)}")
+            # Fall back to basic gsettings command
             return self._run_as_user(['gsettings'] + args)
 
     def _is_supported_environment(self) -> bool:
