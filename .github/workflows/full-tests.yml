@@ -32,10 +32,10 @@ jobs:
           echo "matrix={\"package\":$TESTS}" >> $GITHUB_OUTPUT
 
   run-tests:
-    needs: determine-tests
+    needs: collect-all-tests
     uses: ./.github/workflows/package-test.yaml
     strategy:
-      matrix: ${{fromJson(needs.determine-tests.outputs.matrix)}}
+      matrix: ${{fromJson(needs.collect-all-tests.outputs.matrix)}}
       fail-fast: false  # Continue running other tests even if one fails
       max-parallel: 6   # Limit parallel jobs to avoid resource constraints
     with:
