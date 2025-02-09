@@ -10,11 +10,17 @@ install_package musashi
 start_package musashi 15  # Musashi needs a bit longer to start up
 
 # Test each endpoint
-echo "Testing HTTP endpoint..."
-test_endpoint "http://localhost:8088/"
+echo "Testing CORS Client endpoint..."
+test_endpoint "https://cors-dojo.test:8443/" -- -k
 
-echo "Testing HTTPS endpoint..."
-test_endpoint "https://musashi.test:8443/" -- -k
+echo "Testing CORS API endpoint..."
+test_endpoint "https://api.cors.test:8443/" -- -k
+
+echo "Testing JWT Demo endpoint..."
+test_endpoint "https://jwt-demo.test:8443/" -- -k
+
+echo "Testing CSP Demo endpoint..."
+test_endpoint "https://csp-dojo.test:8443/" -- -k
 
 # Cleanup
 cleanup_package musashi
