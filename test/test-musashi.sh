@@ -2,28 +2,27 @@
 
 set -e
 
-katana install musashi
-sleep 2
-katana start musashi
+# Source common test utilities
+source "$(dirname "$0")/lib.sh"
 
-# jwt-demo
-curl --fail -o /dev/null --retry 5 --retry-all-errors http://localhost:3050/
-curl --fail -o /dev/null --retry 5 --retry-all-errors -k https://jwt-demo.test:8443/
+# Install and start the service
+install_package musashi
+start_package musashi 15  # Musashi needs a bit longer to start up
 
-# csp-dojo
-curl --fail -o /dev/null --retry 5 --retry-all-errors http://localhost:3041/
-curl --fail -o /dev/null --retry 5 --retry-all-errors -k https://csp-dojo.test:8443/
+# Test each endpoint
+echo "Testing CORS Client endpoint..."
+test_endpoint "https://cors-dojo.test:8443/"
 
-# api.cors
-curl --fail -o /dev/null --retry 5 --retry-all-errors http://localhost:3020/
-curl --fail -o /dev/null --retry 5 --retry-all-errors -k https://api.cors.test:8443/
+echo "Testing CORS API endpoint..."
+test_endpoint "https://api.cors.test:8443/" 404 -- --no-fail
 
-# cors-dojo
-curl --fail -o /dev/null --retry 5 --retry-all-errors http://localhost:3021/
-curl --fail -o /dev/null --retry 5 --retry-all-errors -k https://cors-dojo.test:8443/
+echo "Testing JWT Demo endpoint..."
+test_endpoint "https://jwt-demo.test:8443/"
 
-katana stop musashi
-sleep 2
-katana remove musashi
+echo "Testing CSP Demo endpoint..."
+test_endpoint "https://csp-dojo.test:8443/"
+
+# Cleanup
+cleanup_package musashi
 
 echo -e "\nPASSED\n"

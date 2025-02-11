@@ -1,0 +1,76 @@
+---
+
+name: dojo-basic-lite
+category: targets
+description: A lightweight version of the Basic Dojo training application from SamuraiWTF.
+href: https://dojo-basic.test:8443
+
+install:
+  - name: Make sure docker service is running
+    service:
+      name: docker
+      state: running
+
+  - name: Install Dojo Basic Lite docker container
+    docker:
+      name: dojo-basic-lite
+      image: ghcr.io/samuraiwtf/dojo-basic-lite:latest
+      ports:
+        80/tcp: 31010
+
+  - name: Setup hosts file entries
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.test'
+
+  - name: Setup nginx reverse-proxy config
+    reverseproxy:
+      hostname: 'dojo-basic.test'
+      proxy_pass: 'http://localhost:31010'
+      ssl: true
+      headers:
+        - 'proxy_set_header X-Forwarded-Proto $scheme'
+        - 'proxy_set_header X-Forwarded-Port 8443'
+
+  - service:
+      name: nginx
+      state: restarted
+
+remove:
+  - service:
+      name: docker
+      state: running
+  - docker:
+      name: dojo-basic-lite
+
+  - name: Remove hosts file entry
+    lineinfile:
+      dest: /etc/hosts
+      line: '127.0.0.1   dojo-basic.test'
+      state: absent
+
+  - name: Remove nginx reverse-proxy config
+    reverseproxy:
+      hostname: 'dojo-basic.test'
+
+start:
+  - service:
+      name: docker
+      state: running
+  - docker:
+      name: dojo-basic-lite
+
+stop:
+  - service:
+      name: docker
+      state: running
+  - docker:
+      name: dojo-basic-lite
+
+status:
+  running:
+    started:
+      docker: dojo-basic-lite
+  installed:
+    exists:
+      docker: dojo-basic-lite

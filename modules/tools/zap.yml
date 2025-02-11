@@ -8,31 +8,31 @@ install:
   - unarchive:
       url: https://github.com/zaproxy/zaproxy/releases/download/v2.16.0/ZAP_2.16.0_Linux.tar.gz
       dest: /opt/samurai/
+      cleanup: true
 
-  - name: Create zap menu item
-    copy:
-      dest: /etc/samurai.d/applications/zap.desktop
-      content: |
-        #!/usr/bin/env xdg-open
+  - desktop:
+      desktop_file:
+        filename: zap.desktop
+        content: |
+          #!/usr/bin/env xdg-open
 
-        [Desktop Entry]
-        Version=1.0
-        Type=Application
-        Terminal=false
-        Exec=/opt/samurai/ZAP_2.16.0/zap.sh
-        Name=ZAP
-        Icon=/opt/katana/icons/zap.png
-        Categories=samuraiwtf
-        Comment=OWASP Interception proxy
-        Name[en_US]=ZAP
-      mode: 0744
-    become: yes
+          [Desktop Entry]
+          Version=1.0
+          Type=Application
+          Terminal=false
+          Exec=/opt/samurai/ZAP_2.16.0/zap.sh
+          Name=ZAP 2.16
+          Icon=/opt/katana/icons/zap.png
+          Categories=samuraiwtf
+          Comment=OWASP Interception proxy
+          Name[en_US]=ZAP
+        add_to_favorites: true
 
 remove:
+  - desktop:
+      filename: zap.desktop
   - rm:
-      path: /opt/samurai/ZAP_2.16.0
-  - rm:
-      path: /etc/samurai.d/applications/zap.desktop
+      path: /tmp/ZAP_2.16.0_Linux.tar.gz
 
 status:
   installed:
