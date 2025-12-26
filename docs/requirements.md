@@ -97,8 +97,8 @@ category: targets|tools|base    # Category classification
 description: string             # Human-readable description
 href: string?                   # URL template for "Open" button (optional)
                                 # Can use {module} and {domain.base} placeholders
-                                # e.g., "https://{module}.{domain.base}:8443"
-                                # or legacy format: "https://juice-shop.test:8443"
+                                # e.g., "https://{module}.{domain.base}:443"
+                                # or legacy format: "https://juice-shop.test:443"
 depends-on: string[]?           # Module dependencies (optional)
 class: string?                  # Custom provisioner (optional)
 
@@ -123,9 +123,9 @@ status:                         # Status check definitions
 ```
 
 **Module URL Generation:**
-- If `href` contains placeholders (`{module}`, `{domain.base}`), they will be replaced with config values
+- If `href` contains placeholders (`{module}`, `{domain.base}`, `{domain.tls_port}`), they will be replaced with config values
 - If `href` is a complete URL (legacy format), it will be used as-is
-- If `href` is omitted, Katana will auto-generate: `https://{name}.{domain.base}:{domain.tls_port}`
+- If `href` is omitted, Katana will auto-generate: `https://{name}.{domain.base}` (port 443 is standard HTTPS)
 - The ReverseProxy plugin will read domain configuration and generate appropriate nginx configs
 
 ### 2.2 Module Discovery
@@ -497,7 +497,7 @@ const REQUIRED_DEPENDENCIES = [
 
 domain:
   base: wtf                    # Base domain for modules (e.g., dvwa.wtf, juice-shop.wtf)
-  tls_port: 8443               # Port for TLS/HTTPS access via nginx reverse proxy
+  tls_port: 443                # Port for TLS/HTTPS access via nginx reverse proxy
   ui_hostname: katana          # Hostname for Katana UI (e.g., katana.wtf)
 
 server:
@@ -526,18 +526,18 @@ features:
 
 When a module is installed (e.g., `dvwa`), Katana will:
 1. Add `/etc/hosts` entry: `127.0.0.1 dvwa.{base_domain}`
-2. Generate nginx reverse proxy config for `dvwa.{base_domain}:{tls_port}`
+2. Generate nginx reverse proxy config for `dvwa.{base_domain}` on port 443
 3. Create self-signed SSL certificate for the module
-4. Module becomes accessible at `https://dvwa.{base_domain}:{tls_port}`
+4. Module becomes accessible at `https://dvwa.{base_domain}` (standard HTTPS port)
 
 **Examples:**
-- `base: wtf` → modules accessible at `dvwa.wtf:8443`, `juice-shop.wtf:8443`
-- `base: mydomain.internal` → modules at `dvwa.mydomain.internal:8443`
-- `base: local` → modules at `dvwa.local:8443`
+- `base: wtf` → modules accessible at `https://dvwa.wtf`, `https://juice-shop.wtf`
+- `base: mydomain.internal` → modules at `https://dvwa.mydomain.internal`
+- `base: local` → modules at `https://dvwa.local`
 
 The Katana web UI itself will be accessible at:
 - Direct: `http://localhost:{server.port}` (e.g., `http://localhost:8087`)
-- Via reverse proxy: `https://{ui_hostname}.{base_domain}:{tls_port}` (e.g., `https://katana.wtf:8443`)
+- Via reverse proxy: `https://{ui_hostname}.{base_domain}` (e.g., `https://katana.wtf`)
 
 **Backward Compatibility:**
 - Default configuration uses `base: wtf` to match existing behavior
