@@ -215,3 +215,6 @@ fabric.properties
 .idea/*
 *.iml
 .vagrant/
+
+# Claude Code session files
+.CLAUDE_LAST_SESSION.md
