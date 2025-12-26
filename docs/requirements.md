@@ -73,16 +73,48 @@ The Python implementation has timeout issues when installing larger targets from
 
 ### 1.4 Lock Mode (Classroom Management)
 
+**Use Case:** Instructors pre-configure EC2 instances with specific labs for a class, then lock the environment so students can start/stop labs but cannot install/remove them.
+
 **Must Have:**
-- Instructors can lock environment to prevent student modifications
-- When locked, only installed modules are visible
+- Lock environment after pre-installing labs: `katana lock`
+- When locked, students can ONLY:
+  - View installed modules
+  - Start stopped modules
+  - Stop running modules
+  - Access running modules (Open button)
+- When locked, students CANNOT:
+  - Install new modules
+  - Remove installed modules
+  - Unlock the environment (requires root/instructor access)
 - Lock state persists across restarts
-- Lock file format compatible with existing `katana.lock`
+- Web UI shows lock indicator (icon, banner, or header badge)
+- API endpoints respect lock state (return errors for install/remove)
+- Only installed modules visible in module list when locked
+
+**Lock File Format:**
+```yaml
+# katana.lock (enhanced format, backward compatible)
+locked: true
+locked_at: "2025-12-26T10:30:00Z"
+locked_by: "instructor"  # or "provisioning-script"
+message: "Labs for Intro to Web Security - Spring 2025. Contact: instructor@example.com"
+modules:
+  - dvwa
+  - juice-shop
+  - dojo-basic
+```
+
+**Backward Compatibility:**
+- Support legacy format (simple newline-separated list)
+- Auto-migrate to new format on first lock operation
 
 **Nice to Have:**
-- Web UI indication of lock status
-- Lock with message/banner for students
-- Time-based auto-unlock
+- `katana lock --message "Contact instructor@example.com"` - Custom student message
+- `katana lock --code UNLOCK123` - Require unlock code instead of root
+- `katana verify` - Verify locked environment integrity
+- Bulk install for provisioning: `katana install dvwa juice-shop dojo-basic --silent --wait`
+- Class configuration files: `katana install --from-file class-config.yml`
+- Time-based auto-unlock (e.g., unlock after semester ends)
 
 ## 2. Module Definition System
 
@@ -756,7 +788,112 @@ katana/
 - Metrics endpoint (Prometheus format)
 - OpenTelemetry tracing support
 
-## 15. Timeline-Free Phased Implementation
+## 15. EC2 Deployment Considerations
+
+### 15.1 Use Case: Pre-Configured Student Instances
+
+**Scenario:** Instructor provisions one EC2 instance per student, pre-installs class-specific labs, locks the environment.
+
+**Workflow:**
+```bash
+# EC2 provisioning script (user-data or Terraform)
+#!/bin/bash
+
+# Install Katana
+curl -L https://github.com/SamuraiWTF/katana/releases/latest/download/katana \
+  -o /usr/local/bin/katana
+chmod +x /usr/local/bin/katana
+
+# Configure for student
+katana init --non-interactive \
+  --domain-base="student${STUDENT_ID}.training.example.com" \
+  --tls-port=443 \
+  --server-port=8087
+
+# Install class labs
+katana install dvwa juice-shop dojo-basic --silent --wait
+
+# Optional: Start certain labs
+katana start dvwa juice-shop
+
+# Lock environment
+katana lock --message "Intro to Web Security Labs. Contact: instructor@example.com"
+```
+
+### 15.2 Headless Environment Adaptations
+
+**Desktop Integration:**
+- Detect headless environment (no $DISPLAY, no GNOME)
+- Automatically skip `DesktopIntegration` plugin tasks
+- Log warning instead of failing
+- Feature flag: `features.desktop_integration: false` in config
+
+**Network Configuration:**
+- Use real DNS or EC2 public DNS instead of 127.0.0.1
+- Support Route53 or external DNS integration
+- Generate nginx configs with public hostnames
+- SSL certificates work with actual domains
+
+### 15.3 AWS-Specific Features
+
+**Nice to Have:**
+- Automatic Route53 DNS record creation during `katana init`
+- CloudWatch log integration
+- S3 backup for installed.yml and katana.lock
+- EC2 metadata service integration (auto-detect public hostname)
+- Support for Application Load Balancer routing (instead of direct EC2 access)
+
+### 15.4 Security Group Requirements
+
+**Required Ports:**
+- 443 (HTTPS) - Lab access via nginx reverse proxy
+- 8087 (HTTP) - Katana web UI (optional: can restrict to VPN)
+- 22 (SSH) - Optional, for instructor access
+
+**Recommended:**
+- Restrict Katana UI (8087) to VPN or instructor IP
+- Labs (443) accessible to students
+- Use security group rules to limit access scope
+
+### 15.5 Resource Sizing
+
+**Minimum EC2 Instance Requirements:**
+- Instance Type: t3.medium (2 vCPU, 4GB RAM)
+- Storage: 20GB EBS (gp3)
+- OS: Ubuntu 24.04 LTS
+
+**Scaling by Lab Count:**
+- 1-3 labs: t3.medium (2 vCPU, 4GB RAM)
+- 4-6 labs: t3.large (2 vCPU, 8GB RAM)
+- 7+ labs: t3.xlarge (4 vCPU, 16GB RAM)
+
+**Cost Optimization:**
+- Use Spot Instances for temporary training sessions
+- Scheduled shutdown for nights/weekends
+- Terminate instances after class ends
+
+### 15.6 Multi-Region Deployment
+
+**Use Case:** Distribute students across regions for performance
+
+**Terraform/CloudFormation Pattern:**
+```hcl
+# Deploy identical student instances in multiple regions
+module "student_instances" {
+  for_each = toset(["us-east-1", "us-west-2", "eu-west-1"])
+
+  source = "./modules/katana-student"
+  region = each.key
+  student_ids = var.students_in_region[each.key]
+}
+```
+
+**DNS Strategy:**
+- Use latency-based routing in Route53
+- Or: Assign students to nearest region
+- Student URL: `https://student123.region.training.example.com`
+
+## 16. Timeline-Free Phased Implementation
 
 ### Phase 1: Core Foundation
 - CLI skeleton with command routing
