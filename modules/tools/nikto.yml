@@ -16,7 +16,7 @@ install:
         #!/bin/bash
         cd /opt/samurai/nikto/program
         ./nikto.pl "$@"
-      mode: 0777
+      mode: "0777"
 
   - name: Create nikto menu item
     copy:
@@ -34,7 +34,7 @@ install:
         Categories=samuraiwtf
         Comment=Perl-based automated scanner
         Name[en_US]=Nikto
-      mode: 0744
+      mode: "0744"
 
 remove:
   - rm:

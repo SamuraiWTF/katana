@@ -32,7 +32,7 @@ install:
         API_CORS_TYPE=regex
         API_CORS_POLICY=^https?\:\/\/wayfarer\.
         USE_TLS=FALSE
-      mode: 0744
+      mode: "0744"
       force: true
 
   - name: Script to start Wayfarer
@@ -43,7 +43,7 @@ install:
 
         cd /opt/targets/wayfarer
         ./deploy.sh
-      mode: 0744
+      mode: "0744"
 
   - name: Setup nginx reverse-proxy config for wayfarer
     reverseproxy:

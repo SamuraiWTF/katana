@@ -78,7 +78,6 @@ status:
   running:
     started:
       docker: juice-shop
-
-installed:
-  exists:
-    docker: juice-shop
+  installed:
+    exists:
+      docker: juice-shop

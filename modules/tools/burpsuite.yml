@@ -29,7 +29,7 @@ install:
           cd /opt/samurai/burpsuite/
           /usr/bin/java -jar burp.jar
         fi
-      mode: 0777
+      mode: "0777"
 
   - name: Create burpsuite menu item
     copy:
@@ -47,7 +47,7 @@ install:
         Categories=samuraiwtf
         Comment=Interception proxy from Portswigger
         Name[en_US]=Burp Suite
-      mode: 0744
+      mode: "0744"
 
 status:
   installed:

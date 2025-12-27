@@ -69,7 +69,7 @@
                 proxy_pass http://{{CLUSTER_IP}}:31380;
               }
             }
-          mode: 0644
+          mode: "0644"
     
       - name: Set up api nginx reverse-proxy config
         copy:
@@ -82,7 +82,7 @@
                 proxy_pass http://{{CLUSTER_IP}}:31337;
               }
             }
-          mode: 0644
+          mode: "0644"
       
       - name: Set cluster IP in nginx configs
         command:

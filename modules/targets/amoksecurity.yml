@@ -27,7 +27,7 @@ install:
             root /var/www/amoksecurity;
           }
         }
-      mode: 0744
+      mode: "0744"
 
   - service:
       name: nginx

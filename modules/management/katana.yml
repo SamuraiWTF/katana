@@ -21,7 +21,7 @@ install:
 
         [Install]
         WantedBy=multi-user.target
-      mode: 0744
+      mode: "0744"
 
 #  - name: Create service socket for samurai-katana
 #    copy:
@@ -33,7 +33,7 @@ install:
 #
 #        [Install]
 #        WantedBy=sockets.target
-#      mode: 0744
+#      mode: "0744"
 
   - name: Setup hosts file entries (wtf)
     lineinfile:

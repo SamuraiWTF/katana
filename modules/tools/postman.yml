@@ -18,7 +18,7 @@ install:
         #!/bin/bash
         cd /opt/samurai/Postman/app
         ./Postman
-      mode: 0777
+      mode: "0777"
 
   - name: Create Postman menu item
     copy:
@@ -36,7 +36,7 @@ install:
         Categories=samuraiwtf
         Comment=Web Services client
         Name[en_US]=Postman
-      mode: 0744
+      mode: "0744"
 
 remove:
   - rm:
