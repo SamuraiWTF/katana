@@ -241,12 +241,162 @@ describe("unlock command", () => {
 });
 
 // =============================================================================
+// init command
+// =============================================================================
+
+describe("init command", () => {
+	test("creates config file with defaults (non-interactive)", async () => {
+		const tempFile = `/tmp/katana-init-test-${Date.now()}.yml`;
+		tempFiles.push(tempFile);
+
+		const result = await cli(`init --non-interactive --path ${tempFile}`);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Configuration saved");
+		expect(result.stdout).toContain("Domain base:");
+		expect(result.stdout).toContain("Server port:");
+
+		// Verify file was created
+		const content = await Bun.file(tempFile).text();
+		expect(content).toContain("domainBase:");
+		expect(content).toContain("server:");
+	});
+
+	test("respects --domain-base option", async () => {
+		const tempFile = `/tmp/katana-init-test-domain-${Date.now()}.yml`;
+		tempFiles.push(tempFile);
+
+		const result = await cli(`init --non-interactive --path ${tempFile} --domain-base=custom`);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Domain base: custom");
+
+		const content = await Bun.file(tempFile).text();
+		expect(content).toContain("domainBase: custom");
+	});
+
+	test("respects --port option", async () => {
+		const tempFile = `/tmp/katana-init-test-port-${Date.now()}.yml`;
+		tempFiles.push(tempFile);
+
+		const result = await cli(`init --non-interactive --path ${tempFile} --port 9000`);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Server port: 9000");
+
+		const content = await Bun.file(tempFile).text();
+		expect(content).toContain("port: 9000");
+	});
+
+	test("errors when file exists without --force", async () => {
+		const tempFile = `/tmp/katana-init-test-exists-${Date.now()}.yml`;
+		tempFiles.push(tempFile);
+		await Bun.write(tempFile, "existing: content");
+
+		const result = await cli(`init --non-interactive --path ${tempFile}`);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("already exists");
+		expect(result.stderr).toContain("--force");
+	});
+
+	test("overwrites with --force flag", async () => {
+		const tempFile = `/tmp/katana-init-test-force-${Date.now()}.yml`;
+		tempFiles.push(tempFile);
+		await Bun.write(tempFile, "existing: content");
+
+		const result = await cli(`init --non-interactive --path ${tempFile} --force`);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Configuration saved");
+
+		const content = await Bun.file(tempFile).text();
+		expect(content).toContain("domainBase:");
+		expect(content).not.toContain("existing:");
+	});
+
+	test("creates parent directories if needed", async () => {
+		const tempDir = `/tmp/katana-init-test-dir-${Date.now()}`;
+		const tempFile = `${tempDir}/subdir/config.yml`;
+		tempFiles.push(tempFile);
+
+		const result = await cli(`init --non-interactive --path ${tempFile}`);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Configuration saved");
+
+		// Cleanup
+		await Bun.$`rm -rf ${tempDir}`.quiet();
+	});
+});
+
+// =============================================================================
+// list command lock mode
+// =============================================================================
+
+describe("list command - lock mode", () => {
+	test("shows lock banner when locked", async () => {
+		// Ensure unlocked first, then lock with a message
+		await cli("unlock");
+		await cli("lock -m TestLockMessage");
+
+		const result = await cli("list");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("[LOCKED]");
+		expect(result.stdout).toContain("TestLockMessage");
+
+		// Cleanup
+		await cli("unlock");
+	});
+
+	test("shows lock banner without message", async () => {
+		await cli("unlock");
+		await cli("lock");
+
+		const result = await cli("list");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("[LOCKED]");
+		expect(result.stdout).toContain("System is locked");
+
+		// Cleanup
+		await cli("unlock");
+	});
+
+	test("filters to installed modules when locked", async () => {
+		await cli("unlock");
+		// Lock with no installed modules
+		await cli("lock");
+
+		const result = await cli("list");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("[LOCKED]");
+		// Since no modules are installed, should show "No installed modules"
+		expect(result.stdout).toContain("No installed modules");
+
+		// Cleanup
+		await cli("unlock");
+	});
+
+	test("shows all modules when not locked", async () => {
+		await cli("unlock");
+
+		const result = await cli("list");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).not.toContain("[LOCKED]");
+		expect(result.stdout).toContain("dvwa"); // Should show available modules
+	});
+});
+
+// =============================================================================
 // stub commands
 // =============================================================================
 
 describe("stub commands", () => {
 	const stubs = [
-		{ cmd: "init", name: "init" },
 		{ cmd: "install testmod", name: "install" },
 		{ cmd: "remove testmod", name: "remove" },
 		{ cmd: "start testmod", name: "start" },

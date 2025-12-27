@@ -71,22 +71,23 @@ bun test                                   # All unit tests pass
 
 ---
 
-## Phase 2: Configuration & State Management (Partial ✅)
+## Phase 2: Configuration & State Management ✅ COMPLETE
 
 **Goal:** Implement configuration loading, state persistence, and lock mode
 
-### 2.1 Configuration System (`src/core/config.ts`)
-- [ ] Zod schema for configuration (types exist but not config loader)
-- [ ] Load config from `/etc/katana/config.yml` or `~/.config/katana/config.yml`
-- [ ] Default config values with sensible defaults
-- [ ] `katana init` command - interactive config generation
-- [ ] Non-interactive mode: `katana init --non-interactive --domain-base=wtf`
+### 2.1 Configuration System (`src/core/config-manager.ts`) ✅
+- [x] Zod schema for configuration (types in `src/types/config.ts`)
+- [x] ConfigManager singleton for loading config
+- [x] Load config from `/etc/katana/config.yml`, `~/.config/katana/config.yml`, or `./config.yml`
+- [x] Default config values with sensible defaults
+- [x] `katana init` command - interactive config generation
+- [x] Non-interactive mode: `katana init --non-interactive --domain-base=wtf`
 
 ### 2.2 State Persistence (`src/core/state-manager.ts`) ✅
 - [x] Read/write `installed.yml` (backward compatible format)
 - [x] Atomic file writes (write to temp file, then rename)
 - [x] State files in `~/.local/share/katana/`
-- [ ] File locking for concurrent access prevention (deferred)
+- [ ] File locking for concurrent access prevention (deferred to Phase 5)
 
 ### 2.3 Lock Mode (`src/core/state-manager.ts`) ✅
 - [x] Read/write `katana.lock` file
@@ -95,26 +96,30 @@ bun test                                   # All unit tests pass
 - [x] Auto-migration from legacy to new format on first write
 - [x] Lock state checking functions
 
-### 2.4 CLI Commands
-- [ ] `katana init` - generate config file interactively
+### 2.4 CLI Commands ✅
+- [x] `katana init` - generate config file (interactive + non-interactive)
 - [x] `katana lock [--message "..."]` - enable lock mode
 - [x] `katana unlock` - disable lock mode
 - [x] `katana status <module>` - shows installed/not_installed status
-- [ ] `katana list` - respect lock mode (only show installed modules when locked)
+- [x] `katana list` - respects lock mode (only show installed modules when locked)
 
 ### 2.5 Tests ✅
 - [x] State file read/write tests (37 tests)
 - [x] Atomic write tests
 - [x] Lock mode behavior tests
 - [x] Lock file format migration tests
-- [ ] Config loading/validation tests (deferred)
+- [x] Config loading/validation tests (17 tests)
+- [x] Init command tests (6 tests)
+- [x] List lock mode tests (4 tests)
 
 **Testable Milestone:**
 ```bash
+bun run src/cli.ts init --non-interactive --path /tmp/test.yml  # Creates config
 bun run src/cli.ts lock --message "Test"   # Creates lock file
+bun run src/cli.ts list                    # Shows locked modules only
 bun run src/cli.ts status dvwa             # Shows status
 bun run src/cli.ts unlock                  # Removes lock
-bun test                                   # 86 tests pass
+bun test                                   # 112 tests pass
 ```
 
 ---

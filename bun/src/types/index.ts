@@ -1,5 +1,11 @@
 // Module status
 
+// Config manager
+export {
+	ConfigManager,
+	type ConfigManagerOptions,
+	getConfigManager,
+} from "../core/config-manager";
 // Module loader types (re-exported for convenience)
 export type {
 	LoadedModule,
