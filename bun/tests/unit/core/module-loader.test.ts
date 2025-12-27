@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
 import {
-	ModuleLoader,
 	formatModuleLoadError,
 	formatModuleLoaderErrors,
 	loadAllModules,
 	loadModule,
+	ModuleLoader,
 	validateModuleFile,
 } from "../../../src/core/module-loader";
 
@@ -61,9 +61,7 @@ describe("ModuleLoader", () => {
 	describe("loadFromFile", () => {
 		test("loads dvwa.yml correctly", async () => {
 			const loader = new ModuleLoader(MODULES_DIR);
-			const result = await loader.loadFromFile(
-				resolve(MODULES_DIR, "targets", "dvwa.yml"),
-			);
+			const result = await loader.loadFromFile(resolve(MODULES_DIR, "targets", "dvwa.yml"));
 
 			expect(result.success).toBe(true);
 			expect(result.module?.name).toBe("dvwa");
@@ -92,8 +90,7 @@ describe("ModuleLoader", () => {
 			expect(result.error?.type).toBe("yaml_parse");
 
 			// Cleanup
-			await Bun.file(tempFile).exists() &&
-				(await Bun.write(tempFile, "").then(() => {}));
+			(await Bun.file(tempFile).exists()) && (await Bun.write(tempFile, "").then(() => {}));
 		});
 
 		test("returns validation error for invalid module schema", async () => {
@@ -227,9 +224,7 @@ describe("convenience functions", () => {
 	});
 
 	test("validateModuleFile works", async () => {
-		const result = await validateModuleFile(
-			resolve(MODULES_DIR, "targets", "dvwa.yml"),
-		);
+		const result = await validateModuleFile(resolve(MODULES_DIR, "targets", "dvwa.yml"));
 		expect(result.success).toBe(true);
 	});
 });
