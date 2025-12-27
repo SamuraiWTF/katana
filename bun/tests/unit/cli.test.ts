@@ -397,10 +397,6 @@ describe("list command - lock mode", () => {
 
 describe("stub commands", () => {
 	const stubs = [
-		{ cmd: "install testmod", name: "install" },
-		{ cmd: "remove testmod", name: "remove" },
-		{ cmd: "start testmod", name: "start" },
-		{ cmd: "stop testmod", name: "stop" },
 		{ cmd: "update", name: "update" },
 	];
 
@@ -412,6 +408,47 @@ describe("stub commands", () => {
 			expect(result.stdout).toContain("not yet implemented");
 		});
 	}
+});
+
+// =============================================================================
+// module operation commands (install, remove, start, stop)
+// =============================================================================
+
+describe("module operation commands", () => {
+	test("install fails for non-existent module", async () => {
+		const result = await cli("install nonexistent");
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Module not found");
+	});
+
+	test("remove fails for non-existent module", async () => {
+		const result = await cli("remove nonexistent");
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Module not found");
+	});
+
+	test("start fails for non-existent module", async () => {
+		const result = await cli("start nonexistent");
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Module not found");
+	});
+
+	test("stop fails for non-existent module", async () => {
+		const result = await cli("stop nonexistent");
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Module not found");
+	});
+
+	test("install shows dry-run option in help", async () => {
+		const result = await cli("install --help");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("--dry-run");
+	});
 });
 
 // =============================================================================

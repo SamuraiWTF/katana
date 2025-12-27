@@ -12,6 +12,11 @@ export const PluginResultSchema = z.object({
 export type PluginResult = z.infer<typeof PluginResultSchema>;
 
 /**
+ * Operation type indicating which module section is being executed
+ */
+export type Operation = "install" | "remove" | "start" | "stop";
+
+/**
  * Context provided to plugins during execution
  */
 export interface ExecutionContext {
@@ -21,6 +26,8 @@ export interface ExecutionContext {
 	dryRun: boolean;
 	/** Logger instance for plugin output */
 	logger: Logger;
+	/** The operation being performed (install/remove/start/stop) */
+	operation: Operation;
 }
 
 /**

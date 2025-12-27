@@ -5,6 +5,12 @@ import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
 import { stringify as yamlStringify } from "yaml";
 import {
+	TaskExecutor,
+	allSucceeded,
+	getChanges,
+	getFailures,
+} from "./core/executor";
+import {
 	formatModuleLoadError,
 	formatModuleLoaderErrors,
 	loadAllModules,
@@ -12,7 +18,8 @@ import {
 	validateModuleFile,
 } from "./core/module-loader";
 import { StateManager } from "./core/state-manager";
-import type { ModuleCategory } from "./types";
+import { getPluginRegistry } from "./plugins/registry";
+import type { ModuleCategory, Operation, Task } from "./types";
 import { ConfigSchema, DEFAULT_CONFIG } from "./types/config";
 
 const program = new Command();
@@ -365,29 +372,161 @@ program
 		}
 	});
 
+// =============================================================================
+// Module Operation Commands (install, remove, start, stop)
+// =============================================================================
+
+interface ModuleOperationOptions {
+	dryRun?: boolean;
+}
+
+/**
+ * Execute a module operation (install/remove/start/stop)
+ */
+async function executeModuleOperation(
+	moduleName: string,
+	operation: Operation,
+	options: ModuleOperationOptions = {},
+): Promise<void> {
+	// Load module
+	const result = await loadModule(moduleName);
+	if (!result.success || !result.module) {
+		if (result.error) {
+			console.error(formatModuleLoadError(result.error));
+		} else {
+			console.error(`Module not found: ${moduleName}`);
+		}
+		process.exit(1);
+	}
+
+	const mod = result.module;
+	const tasks = mod[operation] as Task[] | undefined;
+
+	if (!tasks || tasks.length === 0) {
+		console.log(`Module ${moduleName} has no ${operation} tasks`);
+		return;
+	}
+
+	// Check lock mode
+	const stateManager = StateManager.getInstance();
+	const isLocked = await stateManager.isLocked();
+
+	if (isLocked && operation !== "start" && operation !== "stop") {
+		const lockState = await stateManager.getLockState();
+		console.error("System is locked. Cannot modify modules.");
+		if (lockState.message) {
+			console.error(`Reason: ${lockState.message}`);
+		}
+		console.error("Use 'katana unlock' to disable lock mode.");
+		process.exit(1);
+	}
+
+	// Load plugins
+	const registry = getPluginRegistry();
+	await registry.loadBuiltinPlugins();
+
+	// Create executor with progress events
+	const executor = new TaskExecutor({
+		dryRun: options.dryRun,
+	});
+
+	// Subscribe to events for progress output
+	executor.on("task:start", (task, index, total) => {
+		const taskName = "name" in task && typeof task.name === "string" ? task.name : `Task ${index + 1}`;
+		process.stdout.write(`[${index + 1}/${total}] ${taskName}...`);
+	});
+
+	executor.on("task:complete", (task, result, _index, _total) => {
+		if (result.success) {
+			const status = result.changed ? "ok" : "unchanged";
+			console.log(` ${status}`);
+		} else {
+			console.log(` FAILED`);
+			if (result.message) {
+				console.error(`    Error: ${result.message}`);
+			}
+		}
+	});
+
+	executor.on("task:error", (_task, error, _index, _total) => {
+		console.log(` ERROR`);
+		console.error(`    ${error.message}`);
+	});
+
+	// Execute tasks
+	console.log("");
+	const verbMap: Record<Operation, string> = {
+		install: "Installing",
+		remove: "Removing",
+		start: "Starting",
+		stop: "Stopping",
+	};
+	console.log(`${verbMap[operation]} ${moduleName}...`);
+	console.log("");
+
+	const results = await executor.execute(tasks, operation);
+
+	// Summary
+	console.log("");
+	const changes = getChanges(results);
+	const failures = getFailures(results);
+
+	if (allSucceeded(results)) {
+		if (options.dryRun) {
+			console.log(`Dry run complete. ${changes.length} task(s) would make changes.`);
+		} else {
+			console.log(`${operation.charAt(0).toUpperCase() + operation.slice(1)} complete.`);
+			console.log(`${changes.length} task(s) made changes.`);
+
+			// Update state on successful install/remove
+			if (operation === "install") {
+				await stateManager.installModule(moduleName);
+			} else if (operation === "remove") {
+				await stateManager.removeModule(moduleName);
+			}
+		}
+	} else {
+		console.error(`${operation.charAt(0).toUpperCase() + operation.slice(1)} failed.`);
+		console.error(`${failures.length} task(s) failed.`);
+		process.exit(1);
+	}
+}
+
 program
 	.command("install")
 	.description("Install a module")
 	.argument("<module>", "Module name to install")
-	.action(stubAction("install"));
+	.option("--dry-run", "Show what would be done without executing")
+	.action(async (moduleName: string, options: ModuleOperationOptions) => {
+		await executeModuleOperation(moduleName, "install", options);
+	});
 
 program
 	.command("remove")
 	.description("Remove a module")
 	.argument("<module>", "Module name to remove")
-	.action(stubAction("remove"));
+	.option("--dry-run", "Show what would be done without executing")
+	.action(async (moduleName: string, options: ModuleOperationOptions) => {
+		await executeModuleOperation(moduleName, "remove", options);
+	});
 
 program
 	.command("start")
 	.description("Start module services")
 	.argument("<module>", "Module name to start")
-	.action(stubAction("start"));
+	.option("--dry-run", "Show what would be done without executing")
+	.action(async (moduleName: string, options: ModuleOperationOptions) => {
+		await executeModuleOperation(moduleName, "start", options);
+	});
 
 program
 	.command("stop")
 	.description("Stop module services")
 	.argument("<module>", "Module name to stop")
-	.action(stubAction("stop"));
+	.option("--dry-run", "Show what would be done without executing")
+	.action(async (moduleName: string, options: ModuleOperationOptions) => {
+		await executeModuleOperation(moduleName, "stop", options);
+	});
 
 program
 	.command("lock")

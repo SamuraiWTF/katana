@@ -119,6 +119,7 @@ export {
 	type ExecutionContext,
 	type IPlugin,
 	type Logger,
+	type Operation,
 	type PluginResult,
 	PluginResultSchema,
 } from "./plugin";
