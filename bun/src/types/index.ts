@@ -1,5 +1,13 @@
 // Module status
 
+// Module loader types (re-exported for convenience)
+export type {
+	LoadedModule,
+	ModuleLoadError,
+	ModuleLoaderOptions,
+	ModuleLoaderResult,
+	ModuleLoadResult,
+} from "../core/module-loader";
 // Configuration
 export {
 	CONFIG_PATHS,
@@ -36,6 +44,11 @@ export {
 	type CopyParams,
 	CopyParamsSchema,
 	CopyTaskSchema,
+	type DesktopFile,
+	DesktopFileSchema,
+	type DesktopParams,
+	DesktopParamsSchema,
+	DesktopTaskSchema,
 	type DockerParams,
 	DockerParamsSchema,
 	DockerTaskSchema,
@@ -83,6 +96,9 @@ export {
 	safeParseModule,
 	type Task,
 	TaskSchema,
+	type UnarchiveParams,
+	UnarchiveParamsSchema,
+	UnarchiveTaskSchema,
 } from "./module";
 // Plugin types
 export {
@@ -93,7 +109,6 @@ export {
 	type PluginResult,
 	PluginResultSchema,
 } from "./plugin";
-
 // State files
 export {
 	EMPTY_INSTALLED_STATE,

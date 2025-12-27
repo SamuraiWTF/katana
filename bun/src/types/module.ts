@@ -134,6 +134,41 @@ export const RmParamsSchema = z.object({
 
 export type RmParams = z.infer<typeof RmParamsSchema>;
 
+/**
+ * Unarchive task - download and extract tar.gz files
+ * Example: { url: "https://example.com/app.tar.gz", dest: "/opt/app", cleanup: true }
+ */
+export const UnarchiveParamsSchema = z.object({
+	url: z.string().url(),
+	dest: z.string().min(1),
+	cleanup: z.boolean().optional(),
+});
+
+export type UnarchiveParams = z.infer<typeof UnarchiveParamsSchema>;
+
+/**
+ * Desktop file configuration for DesktopIntegration plugin
+ */
+export const DesktopFileSchema = z.object({
+	filename: z.string().min(1),
+	content: z.string(),
+	add_to_favorites: z.boolean().optional(),
+});
+
+export type DesktopFile = z.infer<typeof DesktopFileSchema>;
+
+/**
+ * Desktop task - manage desktop integration (menu items, favorites)
+ * For install: { desktop_file: { filename, content, add_to_favorites } }
+ * For remove: { filename: "app.desktop" }
+ */
+export const DesktopParamsSchema = z.object({
+	desktop_file: DesktopFileSchema.optional(),
+	filename: z.string().optional(),
+});
+
+export type DesktopParams = z.infer<typeof DesktopParamsSchema>;
+
 // =============================================================================
 // Task Schema (discriminated by action key)
 // =============================================================================
@@ -193,6 +228,14 @@ export const RmTaskSchema = TaskBaseSchema.extend({
 	rm: RmParamsSchema,
 });
 
+export const UnarchiveTaskSchema = TaskBaseSchema.extend({
+	unarchive: UnarchiveParamsSchema,
+});
+
+export const DesktopTaskSchema = TaskBaseSchema.extend({
+	desktop: DesktopParamsSchema,
+});
+
 /**
  * Union of all task types
  * Each task has an optional `name` field plus exactly one action key
@@ -209,6 +252,8 @@ export const TaskSchema = z.union([
 	CommandTaskSchema,
 	ReplaceTaskSchema,
 	RmTaskSchema,
+	UnarchiveTaskSchema,
+	DesktopTaskSchema,
 ]);
 
 export type Task = z.infer<typeof TaskSchema>;
