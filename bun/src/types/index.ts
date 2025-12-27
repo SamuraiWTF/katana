@@ -8,6 +8,13 @@ export type {
 	ModuleLoaderResult,
 	ModuleLoadResult,
 } from "../core/module-loader";
+// State manager
+export {
+	getStateManager,
+	type LockOptions,
+	StateManager,
+	type StateManagerOptions,
+} from "../core/state-manager";
 // Configuration
 export {
 	CONFIG_PATHS,

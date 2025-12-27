@@ -17,47 +17,47 @@ Development is on Chromebook Linux where some integrations (systemd, Docker) may
 
 ---
 
-## Phase 1: Project Foundation & Core Types
+## Phase 1: Project Foundation & Core Types ✅ COMPLETE
 
 **Goal:** Establish project structure, type definitions, YAML validation, and basic CLI skeleton
 
 ### 1.1 Project Setup
-- [ ] Initialize Bun project with TypeScript strict mode
-- [ ] Configure `tsconfig.json`, `bunfig.toml`
-- [ ] Set up Biome for linting/formatting
-- [ ] Create directory structure
-- [ ] Set up Bun test runner
+- [x] Initialize Bun project with TypeScript strict mode
+- [x] Configure `tsconfig.json`, `bunfig.toml`
+- [x] Set up Biome for linting/formatting
+- [x] Create directory structure
+- [x] Set up Bun test runner
 
 ### 1.2 Type Definitions & Zod Schemas (`src/types/`)
-- [ ] `Module` schema - YAML structure validation with Zod
-- [ ] `Plugin` interface and base types
-- [ ] `Task` types for install/remove/start/stop operations
-- [ ] `ModuleStatus` enum (not_installed, installed, stopped, running, blocked, unknown)
-- [ ] `Config` schema matching config.yml structure
-- [ ] `SSEEvent` types for streaming
-- [ ] Export inferred TypeScript types from Zod schemas
+- [x] `Module` schema - YAML structure validation with Zod
+- [x] `Plugin` interface and base types
+- [x] `Task` types for install/remove/start/stop operations
+- [x] `ModuleStatus` enum (not_installed, installed, stopped, running, blocked, unknown)
+- [x] `Config` schema matching config.yml structure
+- [x] `SSEEvent` types for streaming
+- [x] Export inferred TypeScript types from Zod schemas
 
 ### 1.3 YAML Module Loader (`src/core/`)
-- [ ] `ModuleLoader` - scan `../modules/` directory for YAML files
-- [ ] YAML parsing with `yaml` package
-- [ ] Zod schema validation with human-friendly error messages
-- [ ] Graceful error handling for malformed YAML
-- [ ] Include source file path and line numbers in errors where possible
+- [x] `ModuleLoader` - scan `../modules/` directory for YAML files
+- [x] YAML parsing with `yaml` package
+- [x] Zod schema validation with human-friendly error messages
+- [x] Graceful error handling for malformed YAML
+- [x] Include source file path and line numbers in errors where possible
 
 ### 1.4 CLI Skeleton (`src/cli/`)
-- [ ] Main entry point (`src/cli.ts`)
-- [ ] Command routing using `commander`
-- [ ] Implement commands:
+- [x] Main entry point (`src/cli.ts`)
+- [x] Command routing using `commander`
+- [x] Implement commands:
   - `katana list [category]` - List available modules
-  - `katana status <module>` - Check module status (stub)
+  - `katana status <module>` - Check module status
   - `katana validate <file>` - Validate YAML syntax and schema
-- [ ] Stub remaining commands: init, install, remove, start, stop, lock, unlock, update
+- [x] Stub remaining commands: init, install, remove, start, stop, update
 
 ### 1.5 Tests
-- [ ] Zod schema tests (valid and invalid module structures)
-- [ ] YAML parsing tests against existing module files in `../modules/`
-- [ ] Validation error message tests
-- [ ] CLI argument parsing tests
+- [x] Zod schema tests (valid and invalid module structures)
+- [x] YAML parsing tests against existing module files in `../modules/`
+- [x] Validation error message tests
+- [x] CLI argument parsing tests
 
 **Testable Milestone:**
 ```bash
@@ -71,50 +71,50 @@ bun test                                   # All unit tests pass
 
 ---
 
-## Phase 2: Configuration & State Management
+## Phase 2: Configuration & State Management (Partial ✅)
 
 **Goal:** Implement configuration loading, state persistence, and lock mode
 
 ### 2.1 Configuration System (`src/core/config.ts`)
-- [ ] Zod schema for configuration
+- [ ] Zod schema for configuration (types exist but not config loader)
 - [ ] Load config from `/etc/katana/config.yml` or `~/.config/katana/config.yml`
 - [ ] Default config values with sensible defaults
 - [ ] `katana init` command - interactive config generation
 - [ ] Non-interactive mode: `katana init --non-interactive --domain-base=wtf`
 
-### 2.2 State Persistence (`src/core/state.ts`)
-- [ ] Read/write `installed.yml` (backward compatible format)
-- [ ] Atomic file writes (write to temp file, then rename)
-- [ ] File locking for concurrent access prevention
+### 2.2 State Persistence (`src/core/state-manager.ts`) ✅
+- [x] Read/write `installed.yml` (backward compatible format)
+- [x] Atomic file writes (write to temp file, then rename)
+- [x] State files in `~/.local/share/katana/`
+- [ ] File locking for concurrent access prevention (deferred)
 
-### 2.3 Lock Mode (`src/core/lock.ts`)
-- [ ] Read/write `katana.lock` file
-- [ ] Support legacy format (newline-separated module list)
-- [ ] Support new YAML format with metadata (locked_at, locked_by, message)
-- [ ] Auto-migration from legacy to new format on first write
-- [ ] Lock state checking functions
+### 2.3 Lock Mode (`src/core/state-manager.ts`) ✅
+- [x] Read/write `katana.lock` file
+- [x] Support legacy format (newline-separated module list)
+- [x] Support new YAML format with metadata (locked_at, locked_by, message)
+- [x] Auto-migration from legacy to new format on first write
+- [x] Lock state checking functions
 
 ### 2.4 CLI Commands
 - [ ] `katana init` - generate config file interactively
-- [ ] `katana lock [--message "..."]` - enable lock mode
-- [ ] `katana unlock` - disable lock mode (requires appropriate permissions)
+- [x] `katana lock [--message "..."]` - enable lock mode
+- [x] `katana unlock` - disable lock mode
+- [x] `katana status <module>` - shows installed/not_installed status
 - [ ] `katana list` - respect lock mode (only show installed modules when locked)
 
-### 2.5 Tests
-- [ ] Config loading/validation tests
-- [ ] Config default value tests
-- [ ] State file read/write tests
-- [ ] Atomic write tests
-- [ ] Lock mode behavior tests
-- [ ] Lock file format migration tests
+### 2.5 Tests ✅
+- [x] State file read/write tests (37 tests)
+- [x] Atomic write tests
+- [x] Lock mode behavior tests
+- [x] Lock file format migration tests
+- [ ] Config loading/validation tests (deferred)
 
 **Testable Milestone:**
 ```bash
-bun run src/cli.ts init                    # Creates config file
 bun run src/cli.ts lock --message "Test"   # Creates lock file
-bun run src/cli.ts list                    # Shows only locked modules
+bun run src/cli.ts status dvwa             # Shows status
 bun run src/cli.ts unlock                  # Removes lock
-bun test
+bun test                                   # 86 tests pass
 ```
 
 ---

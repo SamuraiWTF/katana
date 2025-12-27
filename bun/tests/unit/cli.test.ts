@@ -162,7 +162,7 @@ describe("status command", () => {
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("Module: dvwa");
 		expect(result.stdout).toContain("Category: targets");
-		expect(result.stdout).toContain("not yet implemented");
+		expect(result.stdout).toContain("Status: not_installed");
 	});
 
 	test("finds module with case-insensitive name", async () => {
@@ -182,6 +182,65 @@ describe("status command", () => {
 });
 
 // =============================================================================
+// lock/unlock commands
+// =============================================================================
+
+describe("lock command", () => {
+	test("enables lock mode", async () => {
+		// Ensure unlocked before testing
+		await cli("unlock");
+
+		const result = await cli("lock");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Lock mode enabled");
+	});
+
+	test("enables lock mode with message", async () => {
+		// First unlock in case previous test left it locked
+		await cli("unlock");
+
+		// Note: cli() splits on spaces, so use a message without spaces
+		const result = await cli("lock -m ProductionDeployment");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Lock mode enabled");
+	});
+
+	test("shows message when already locked", async () => {
+		// Ensure locked
+		await cli("lock");
+
+		const result = await cli("lock");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("already locked");
+	});
+});
+
+describe("unlock command", () => {
+	test("disables lock mode", async () => {
+		// Ensure locked first
+		await cli("lock");
+
+		const result = await cli("unlock");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Lock mode disabled");
+	});
+
+	test("shows message when not locked", async () => {
+		// Ensure unlocked
+		await cli("unlock");
+
+		const result = await cli("unlock");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("not locked");
+	});
+});
+
+// =============================================================================
 // stub commands
 // =============================================================================
 
@@ -192,8 +251,6 @@ describe("stub commands", () => {
 		{ cmd: "remove testmod", name: "remove" },
 		{ cmd: "start testmod", name: "start" },
 		{ cmd: "stop testmod", name: "stop" },
-		{ cmd: "lock", name: "lock" },
-		{ cmd: "unlock", name: "unlock" },
 		{ cmd: "update", name: "update" },
 	];
 

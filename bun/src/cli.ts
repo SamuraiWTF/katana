@@ -8,6 +8,7 @@ import {
 	loadModule,
 	validateModuleFile,
 } from "./core/module-loader";
+import { StateManager } from "./core/state-manager";
 import type { ModuleCategory } from "./types";
 
 const program = new Command();
@@ -96,14 +97,22 @@ program
 			const result = await loadModule(moduleName);
 
 			if (result.success && result.module) {
+				const stateManager = StateManager.getInstance();
+				const status = await stateManager.getModuleStatus(moduleName);
+
 				console.log(`Module: ${result.module.name}`);
 				console.log(`Category: ${result.module.category}`);
 				if (result.module.description) {
 					console.log(`Description: ${result.module.description}`);
 				}
 				console.log("");
-				console.log("Status: not yet implemented");
-				console.log("(Full status checks will be available in a future version)");
+				console.log(`Status: ${status}`);
+
+				// Show installation info if installed
+				const installInfo = await stateManager.getModuleInstallInfo(moduleName);
+				if (installInfo?.installedAt) {
+					console.log(`Installed: ${installInfo.installedAt}`);
+				}
 			} else if (result.error) {
 				console.error(formatModuleLoadError(result.error));
 				process.exit(1);
@@ -152,12 +161,58 @@ program
 program
 	.command("lock")
 	.description("Enable lock mode (prevent changes)")
-	.action(stubAction("lock"));
+	.option("-m, --message <message>", "Lock message explaining the reason")
+	.action(async (options: { message?: string }) => {
+		try {
+			const stateManager = StateManager.getInstance();
+
+			// Check if already locked
+			if (await stateManager.isLocked()) {
+				const state = await stateManager.getLockState();
+				console.log("System is already locked.");
+				if (state.lockedBy) {
+					console.log(`Locked by: ${state.lockedBy}`);
+				}
+				if (state.message) {
+					console.log(`Reason: ${state.message}`);
+				}
+				return;
+			}
+
+			await stateManager.enableLock({
+				message: options.message,
+				lockedBy: process.env.USER ?? "unknown",
+			});
+
+			const installed = await stateManager.getInstalledModuleNames();
+			console.log("Lock mode enabled.");
+			console.log(`Locked modules: ${installed.length > 0 ? installed.join(", ") : "(none)"}`);
+		} catch (error) {
+			console.error("Error enabling lock:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
 
 program
 	.command("unlock")
 	.description("Disable lock mode (allow changes)")
-	.action(stubAction("unlock"));
+	.action(async () => {
+		try {
+			const stateManager = StateManager.getInstance();
+
+			// Check if not locked
+			if (!(await stateManager.isLocked())) {
+				console.log("System is not locked.");
+				return;
+			}
+
+			await stateManager.disableLock();
+			console.log("Lock mode disabled.");
+		} catch (error) {
+			console.error("Error disabling lock:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
 
 program.command("update").description("Update installed modules").action(stubAction("update"));
 
