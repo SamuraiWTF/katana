@@ -709,6 +709,51 @@ program
 program.command("update").description("Update installed modules").action(stubAction("update"));
 
 // =============================================================================
+// Serve Command
+// =============================================================================
+
+import { ConfigManager } from "./core/config-manager";
+import { createServer, printServerInfo } from "./server";
+
+interface ServeOptions {
+	port?: number;
+	host?: string;
+	cors?: boolean;
+}
+
+program
+	.command("serve")
+	.description("Start the REST API server")
+	.option("-p, --port <port>", "Port to listen on", Number.parseInt)
+	.option("--host <host>", "Host to bind to")
+	.option("--cors", "Enable CORS for development")
+	.action(async (options: ServeOptions) => {
+		try {
+			// Load config
+			const configManager = ConfigManager.getInstance();
+			const config = await configManager.loadConfig();
+
+			// Override config with CLI options
+			if (options.port) {
+				config.server.port = options.port;
+			}
+			if (options.host) {
+				config.server.host = options.host;
+			}
+			if (options.cors) {
+				config.server.cors = true;
+			}
+
+			// Start server
+			createServer({ config });
+			printServerInfo(config);
+		} catch (error) {
+			console.error("Error starting server:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
+
+// =============================================================================
 // Parse and run
 // =============================================================================
 
