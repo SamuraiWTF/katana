@@ -7,21 +7,14 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { getMockState, isMockMode } from "../core/mock-state";
 import { DesktopParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 const APPLICATIONS_DIR = join(homedir(), ".local", "share", "applications");
 
 export class DesktopPlugin extends BasePlugin {
 	readonly name = "desktop";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = DesktopParamsSchema.safeParse(params);
 		if (!parsed.success) {
@@ -118,10 +111,7 @@ export class DesktopPlugin extends BasePlugin {
 	/**
 	 * Execute remove operation
 	 */
-	private async executeRemove(
-		filename: string,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	private async executeRemove(filename: string, context: ExecutionContext): Promise<PluginResult> {
 		const desktopPath = join(APPLICATIONS_DIR, filename);
 
 		// Mock mode
@@ -167,16 +157,12 @@ export class DesktopPlugin extends BasePlugin {
 	/**
 	 * Add to GNOME favorites
 	 */
-	private async addToFavorites(
-		filename: string,
-		context: ExecutionContext,
-	): Promise<void> {
+	private async addToFavorites(filename: string, context: ExecutionContext): Promise<void> {
 		try {
 			// Get current favorites
-			const proc = Bun.spawn(
-				["gsettings", "get", "org.gnome.shell", "favorite-apps"],
-				{ stdout: "pipe" },
-			);
+			const proc = Bun.spawn(["gsettings", "get", "org.gnome.shell", "favorite-apps"], {
+				stdout: "pipe",
+			});
 			const output = await new Response(proc.stdout).text();
 
 			// Parse the current favorites array
@@ -190,10 +176,9 @@ export class DesktopPlugin extends BasePlugin {
 
 			// Add to favorites
 			const newFavorites = currentFavorites.replace(/\]$/, `, '${appId}']`);
-			await Bun.spawn(
-				["gsettings", "set", "org.gnome.shell", "favorite-apps", newFavorites],
-				{ stdout: "pipe" },
-			).exited;
+			await Bun.spawn(["gsettings", "set", "org.gnome.shell", "favorite-apps", newFavorites], {
+				stdout: "pipe",
+			}).exited;
 
 			context.logger.info(`Added ${filename} to favorites`);
 		} catch {
@@ -204,16 +189,12 @@ export class DesktopPlugin extends BasePlugin {
 	/**
 	 * Remove from GNOME favorites
 	 */
-	private async removeFromFavorites(
-		filename: string,
-		context: ExecutionContext,
-	): Promise<void> {
+	private async removeFromFavorites(filename: string, context: ExecutionContext): Promise<void> {
 		try {
 			// Get current favorites
-			const proc = Bun.spawn(
-				["gsettings", "get", "org.gnome.shell", "favorite-apps"],
-				{ stdout: "pipe" },
-			);
+			const proc = Bun.spawn(["gsettings", "get", "org.gnome.shell", "favorite-apps"], {
+				stdout: "pipe",
+			});
 			const output = await new Response(proc.stdout).text();
 
 			const appId = filename;
@@ -228,10 +209,9 @@ export class DesktopPlugin extends BasePlugin {
 				.replace(new RegExp(`'${appId}',?\\s*`), "")
 				.replace(/,\s*\]/, "]"); // Clean up trailing comma
 
-			await Bun.spawn(
-				["gsettings", "set", "org.gnome.shell", "favorite-apps", newFavorites],
-				{ stdout: "pipe" },
-			).exited;
+			await Bun.spawn(["gsettings", "set", "org.gnome.shell", "favorite-apps", newFavorites], {
+				stdout: "pipe",
+			}).exited;
 
 			context.logger.info(`Removed ${filename} from favorites`);
 		} catch {

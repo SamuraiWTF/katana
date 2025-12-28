@@ -4,12 +4,8 @@ import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
 import { stringify as yamlStringify } from "yaml";
-import {
-	TaskExecutor,
-	allSucceeded,
-	getChanges,
-	getFailures,
-} from "./core/executor";
+import { DependencyResolver } from "./core/dependencies";
+import { allSucceeded, getChanges, getFailures, TaskExecutor } from "./core/executor";
 import {
 	formatModuleLoadError,
 	formatModuleLoaderErrors,
@@ -18,6 +14,7 @@ import {
 	validateModuleFile,
 } from "./core/module-loader";
 import { StateManager } from "./core/state-manager";
+import { StatusChecker } from "./core/status";
 import { getPluginRegistry } from "./plugins/registry";
 import type { ModuleCategory, Operation, Task } from "./types";
 import { ConfigSchema, DEFAULT_CONFIG } from "./types/config";
@@ -34,7 +31,8 @@ program
 	.command("list")
 	.description("List available modules")
 	.argument("[category]", "Filter by category (targets, tools, network, system)")
-	.action(async (category?: string) => {
+	.option("--status", "Show real-time status for each module")
+	.action(async (category?: string, options?: { status?: boolean }) => {
 		try {
 			// Check lock state
 			const stateManager = StateManager.getInstance();
@@ -74,16 +72,38 @@ program
 				return;
 			}
 
-			// Print header
+			// Get status for all modules if --status flag is set
+			let statusMap: Map<string, import("./core/status").StatusResult> | null = null;
+			if (options?.status) {
+				const statusChecker = new StatusChecker();
+				statusMap = await statusChecker.checkStatusBatch(modules);
+			}
+
+			// Print header (with STATUS column if checking status)
 			console.log("");
-			console.log(`${"NAME".padEnd(25)} ${"CATEGORY".padEnd(12)} DESCRIPTION`);
-			console.log(`${"-".repeat(25)} ${"-".repeat(12)} ${"-".repeat(40)}`);
+			if (statusMap) {
+				console.log(
+					`${"NAME".padEnd(25)} ${"CATEGORY".padEnd(12)} ${"STATUS".padEnd(20)} DESCRIPTION`,
+				);
+				console.log(`${"-".repeat(25)} ${"-".repeat(12)} ${"-".repeat(20)} ${"-".repeat(30)}`);
+			} else {
+				console.log(`${"NAME".padEnd(25)} ${"CATEGORY".padEnd(12)} DESCRIPTION`);
+				console.log(`${"-".repeat(25)} ${"-".repeat(12)} ${"-".repeat(40)}`);
+			}
 
 			// Sort and print modules
 			const sorted = modules.sort((a, b) => a.name.localeCompare(b.name));
 			for (const mod of sorted) {
-				const desc = mod.description?.slice(0, 50) || "";
-				console.log(`${mod.name.padEnd(25)} ${mod.category.padEnd(12)} ${desc}`);
+				const desc = mod.description?.slice(0, statusMap ? 30 : 50) || "";
+				if (statusMap) {
+					const statusResult = statusMap.get(mod.name.toLowerCase());
+					const statusStr = statusResult ? StatusChecker.formatStatus(statusResult) : "unknown";
+					console.log(
+						`${mod.name.padEnd(25)} ${mod.category.padEnd(12)} ${statusStr.padEnd(20)} ${desc}`,
+					);
+				} else {
+					console.log(`${mod.name.padEnd(25)} ${mod.category.padEnd(12)} ${desc}`);
+				}
 			}
 
 			console.log("");
@@ -137,18 +157,33 @@ program
 			const result = await loadModule(moduleName);
 
 			if (result.success && result.module) {
-				const stateManager = StateManager.getInstance();
-				const status = await stateManager.getModuleStatus(moduleName);
-
 				console.log(`Module: ${result.module.name}`);
 				console.log(`Category: ${result.module.category}`);
 				if (result.module.description) {
 					console.log(`Description: ${result.module.description}`);
 				}
 				console.log("");
-				console.log(`Status: ${status}`);
+
+				// Use StatusChecker for real status if module has status checks
+				if (result.module.status?.installed || result.module.status?.running) {
+					const statusChecker = new StatusChecker();
+					const statusResult = await statusChecker.checkStatus(result.module);
+					console.log(`Status: ${StatusChecker.formatStatus(statusResult)}`);
+				} else {
+					// Fall back to state manager for modules without status checks
+					const stateManager = StateManager.getInstance();
+					const status = await stateManager.getModuleStatus(moduleName);
+					console.log(`Status: ${status}`);
+				}
+
+				// Show dependencies if present
+				const deps = result.module["depends-on"];
+				if (deps && deps.length > 0) {
+					console.log(`Dependencies: ${deps.join(", ")}`);
+				}
 
 				// Show installation info if installed
+				const stateManager = StateManager.getInstance();
 				const installInfo = await stateManager.getModuleInstallInfo(moduleName);
 				if (installInfo?.installedAt) {
 					console.log(`Installed: ${installInfo.installedAt}`);
@@ -381,14 +416,14 @@ interface ModuleOperationOptions {
 }
 
 /**
- * Execute a module operation (install/remove/start/stop)
+ * Execute tasks for a single module (helper for executeModuleOperation)
  */
-async function executeModuleOperation(
+async function executeModuleTasks(
 	moduleName: string,
 	operation: Operation,
-	options: ModuleOperationOptions = {},
-): Promise<void> {
-	// Load module
+	options: ModuleOperationOptions,
+	stateManager: StateManager,
+): Promise<boolean> {
 	const result = await loadModule(moduleName);
 	if (!result.success || !result.module) {
 		if (result.error) {
@@ -396,7 +431,7 @@ async function executeModuleOperation(
 		} else {
 			console.error(`Module not found: ${moduleName}`);
 		}
-		process.exit(1);
+		return false;
 	}
 
 	const mod = result.module;
@@ -404,21 +439,7 @@ async function executeModuleOperation(
 
 	if (!tasks || tasks.length === 0) {
 		console.log(`Module ${moduleName} has no ${operation} tasks`);
-		return;
-	}
-
-	// Check lock mode
-	const stateManager = StateManager.getInstance();
-	const isLocked = await stateManager.isLocked();
-
-	if (isLocked && operation !== "start" && operation !== "stop") {
-		const lockState = await stateManager.getLockState();
-		console.error("System is locked. Cannot modify modules.");
-		if (lockState.message) {
-			console.error(`Reason: ${lockState.message}`);
-		}
-		console.error("Use 'katana unlock' to disable lock mode.");
-		process.exit(1);
+		return true;
 	}
 
 	// Load plugins
@@ -432,18 +453,19 @@ async function executeModuleOperation(
 
 	// Subscribe to events for progress output
 	executor.on("task:start", (task, index, total) => {
-		const taskName = "name" in task && typeof task.name === "string" ? task.name : `Task ${index + 1}`;
+		const taskName =
+			"name" in task && typeof task.name === "string" ? task.name : `Task ${index + 1}`;
 		process.stdout.write(`[${index + 1}/${total}] ${taskName}...`);
 	});
 
-	executor.on("task:complete", (task, result, _index, _total) => {
-		if (result.success) {
-			const status = result.changed ? "ok" : "unchanged";
+	executor.on("task:complete", (task, taskResult, _index, _total) => {
+		if (taskResult.success) {
+			const status = taskResult.changed ? "ok" : "unchanged";
 			console.log(` ${status}`);
 		} else {
 			console.log(` FAILED`);
-			if (result.message) {
-				console.error(`    Error: ${result.message}`);
+			if (taskResult.message) {
+				console.error(`    Error: ${taskResult.message}`);
 			}
 		}
 	});
@@ -454,7 +476,6 @@ async function executeModuleOperation(
 	});
 
 	// Execute tasks
-	console.log("");
 	const verbMap: Record<Operation, string> = {
 		install: "Installing",
 		remove: "Removing",
@@ -485,9 +506,110 @@ async function executeModuleOperation(
 				await stateManager.removeModule(moduleName);
 			}
 		}
-	} else {
-		console.error(`${operation.charAt(0).toUpperCase() + operation.slice(1)} failed.`);
-		console.error(`${failures.length} task(s) failed.`);
+		return true;
+	}
+
+	console.error(`${operation.charAt(0).toUpperCase() + operation.slice(1)} failed.`);
+	console.error(`${failures.length} task(s) failed.`);
+	return false;
+}
+
+/**
+ * Execute a module operation (install/remove/start/stop)
+ */
+async function executeModuleOperation(
+	moduleName: string,
+	operation: Operation,
+	options: ModuleOperationOptions = {},
+): Promise<void> {
+	// Load module to verify it exists
+	const result = await loadModule(moduleName);
+	if (!result.success || !result.module) {
+		if (result.error) {
+			console.error(formatModuleLoadError(result.error));
+		} else {
+			console.error(`Module not found: ${moduleName}`);
+		}
+		process.exit(1);
+	}
+
+	// Check lock mode
+	const stateManager = StateManager.getInstance();
+	const isLocked = await stateManager.isLocked();
+
+	if (isLocked && operation !== "start" && operation !== "stop") {
+		const lockState = await stateManager.getLockState();
+		console.error("System is locked. Cannot modify modules.");
+		if (lockState.message) {
+			console.error(`Reason: ${lockState.message}`);
+		}
+		console.error("Use 'katana unlock' to disable lock mode.");
+		process.exit(1);
+	}
+
+	console.log("");
+
+	// Handle dependencies for install
+	if (operation === "install") {
+		const allModulesResult = await loadAllModules();
+		const resolver = new DependencyResolver(allModulesResult.modules);
+
+		// Resolve installation order
+		const resolution = resolver.getInstallOrder(moduleName);
+		if (!resolution.success) {
+			for (const error of resolution.errors) {
+				console.error(`Dependency error: ${error.message}`);
+			}
+			process.exit(1);
+		}
+
+		// Install dependencies first (in order), skipping already installed
+		const statusChecker = new StatusChecker();
+		for (const depName of resolution.order) {
+			if (depName.toLowerCase() === moduleName.toLowerCase()) continue;
+
+			// Check if already installed
+			const depModule = allModulesResult.modules.find(
+				(m) => m.name.toLowerCase() === depName.toLowerCase(),
+			);
+			if (depModule) {
+				const status = await statusChecker.checkStatus(depModule);
+				if (status.installed) {
+					console.log(`Dependency ${depName} already installed, skipping\n`);
+					continue;
+				}
+			}
+
+			// Install dependency (fail-fast)
+			console.log(`Installing dependency: ${depName}\n`);
+			const success = await executeModuleTasks(depName, "install", options, stateManager);
+			if (!success) {
+				console.error(`\nFailed to install dependency: ${depName}`);
+				console.error("Aborting installation.");
+				process.exit(1);
+			}
+			console.log("");
+		}
+	}
+
+	// Handle warning for remove when dependents exist
+	if (operation === "remove") {
+		const allModulesResult = await loadAllModules();
+		const resolver = new DependencyResolver(allModulesResult.modules);
+
+		const dependents = resolver.getDependents(moduleName);
+		if (dependents.length > 0) {
+			console.warn(`Warning: The following modules depend on ${moduleName}:`);
+			for (const dep of dependents) {
+				console.warn(`  - ${dep}`);
+			}
+			console.warn("Proceeding with removal...\n");
+		}
+	}
+
+	// Execute the main module operation
+	const success = await executeModuleTasks(moduleName, operation, options, stateManager);
+	if (!success) {
 		process.exit(1);
 	}
 }

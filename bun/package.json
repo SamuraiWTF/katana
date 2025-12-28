@@ -1,25 +1,25 @@
 {
-  "name": "katana",
-  "version": "0.1.0",
-  "type": "module",
-  "module": "src/cli.ts",
-  "scripts": {
-    "dev": "bun run src/cli.ts",
-    "test": "bun test",
-    "lint": "biome check src/",
-    "format": "biome format --write src/",
-    "build": "bun build --compile src/cli.ts --outfile katana"
-  },
-  "dependencies": {
-    "hono": "latest",
-    "yaml": "latest",
-    "zod": "latest",
-    "commander": "latest",
-    "pino": "latest"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "latest",
-    "@biomejs/biome": "latest"
-  }
+	"name": "katana",
+	"version": "0.1.0",
+	"type": "module",
+	"module": "src/cli.ts",
+	"scripts": {
+		"dev": "bun run src/cli.ts",
+		"test": "bun test",
+		"lint": "biome check src/",
+		"format": "biome format --write src/",
+		"build": "bun build --compile src/cli.ts --outfile katana"
+	},
+	"dependencies": {
+		"hono": "latest",
+		"yaml": "latest",
+		"zod": "latest",
+		"commander": "latest",
+		"pino": "latest"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "latest",
+		"@biomejs/biome": "latest"
+	}
 }

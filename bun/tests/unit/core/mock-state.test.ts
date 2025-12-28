@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { MockState, getMockState, isMockMode } from "../../../src/core/mock-state";
+import { getMockState, isMockMode, MockState } from "../../../src/core/mock-state";
 
 describe("MockState", () => {
 	beforeEach(() => {

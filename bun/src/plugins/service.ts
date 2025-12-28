@@ -5,19 +5,12 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { ServiceParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class ServicePlugin extends BasePlugin {
 	readonly name = "service";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = ServiceParamsSchema.safeParse(params);
 		if (!parsed.success) {
@@ -184,10 +177,9 @@ export class ServicePlugin extends BasePlugin {
 	 */
 	private async serviceExists(name: string): Promise<boolean> {
 		try {
-			const proc = Bun.spawn(
-				["systemctl", "list-unit-files", `${name}.service`, "--no-legend"],
-				{ stdout: "pipe" },
-			);
+			const proc = Bun.spawn(["systemctl", "list-unit-files", `${name}.service`, "--no-legend"], {
+				stdout: "pipe",
+			});
 			const output = await new Response(proc.stdout).text();
 			return output.trim().length > 0;
 		} catch {

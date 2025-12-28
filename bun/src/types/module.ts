@@ -360,6 +360,8 @@ export const ModuleSchema = z.object({
 	description: z.string().optional(),
 	/** URL to access the module when running (for targets) */
 	href: z.string().url().optional(),
+	/** Module dependencies - must be installed before this module */
+	"depends-on": z.array(z.string().min(1)).optional(),
 	/** Tasks to run when installing the module */
 	install: z.array(TaskSchema).optional(),
 	/** Tasks to run when removing the module */

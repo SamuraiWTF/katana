@@ -5,28 +5,19 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { RmParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class RmPlugin extends BasePlugin {
 	readonly name = "rm";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = RmParamsSchema.safeParse(params);
 		if (!parsed.success) {
 			return this.failure(`Invalid rm params: ${parsed.error.message}`);
 		}
 
-		const paths = Array.isArray(parsed.data.path)
-			? parsed.data.path
-			: [parsed.data.path];
+		const paths = Array.isArray(parsed.data.path) ? parsed.data.path : [parsed.data.path];
 
 		// Mock mode
 		if (context.mock || isMockMode()) {
@@ -46,10 +37,7 @@ export class RmPlugin extends BasePlugin {
 	/**
 	 * Execute in mock mode using MockState
 	 */
-	private async executeMock(
-		paths: string[],
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	private async executeMock(paths: string[], context: ExecutionContext): Promise<PluginResult> {
 		const mock = getMockState();
 		let anyRemoved = false;
 
@@ -71,10 +59,7 @@ export class RmPlugin extends BasePlugin {
 	/**
 	 * Execute real rm operations
 	 */
-	private async executeReal(
-		paths: string[],
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	private async executeReal(paths: string[], context: ExecutionContext): Promise<PluginResult> {
 		try {
 			let anyRemoved = false;
 
@@ -93,9 +78,7 @@ export class RmPlugin extends BasePlugin {
 
 			return this.success(`Removed ${paths.length} path(s)`);
 		} catch (error) {
-			return this.failure(
-				`rm failed: ${error instanceof Error ? error.message : String(error)}`,
-			);
+			return this.failure(`rm failed: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 }

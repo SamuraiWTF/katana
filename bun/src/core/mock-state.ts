@@ -78,11 +78,7 @@ export class MockState {
 	/**
 	 * Create a container (but don't start it)
 	 */
-	createContainer(
-		name: string,
-		image: string,
-		ports: Record<string, number> = {},
-	): void {
+	createContainer(name: string, image: string, ports: Record<string, number> = {}): void {
 		this.containers.set(name, {
 			name,
 			image,
@@ -306,8 +302,7 @@ export class MockState {
 	// Reverse Proxy Management (nginx configs)
 	// =========================================================================
 
-	private reverseProxies: Map<string, { hostname: string; proxyPass?: string }> =
-		new Map();
+	private reverseProxies: Map<string, { hostname: string; proxyPass?: string }> = new Map();
 
 	/**
 	 * Add a reverse proxy config

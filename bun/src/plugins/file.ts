@@ -5,19 +5,12 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { FileParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class FilePlugin extends BasePlugin {
 	readonly name = "file";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = FileParamsSchema.safeParse(params);
 		if (!parsed.success) {

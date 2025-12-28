@@ -4,19 +4,12 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { GetUrlParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class GetUrlPlugin extends BasePlugin {
 	readonly name = "get_url";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = GetUrlParamsSchema.safeParse(params);
 		if (!parsed.success) {

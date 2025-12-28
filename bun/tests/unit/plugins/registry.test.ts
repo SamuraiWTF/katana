@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { PluginRegistry, getPluginRegistry } from "../../../src/plugins/registry";
+import { getPluginRegistry, PluginRegistry } from "../../../src/plugins/registry";
 import { BasePlugin, type ExecutionContext, type PluginResult } from "../../../src/types/plugin";
 
 // Simple test plugin

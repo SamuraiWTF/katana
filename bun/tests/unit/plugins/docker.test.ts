@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { MockState, getMockState } from "../../../src/core/mock-state";
+import { getMockState, MockState } from "../../../src/core/mock-state";
 import { DockerPlugin } from "../../../src/plugins/docker";
 import type { ExecutionContext, Logger } from "../../../src/types/plugin";
 

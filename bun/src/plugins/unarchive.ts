@@ -4,19 +4,12 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { UnarchiveParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class UnarchivePlugin extends BasePlugin {
 	readonly name = "unarchive";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = UnarchiveParamsSchema.safeParse(params);
 		if (!parsed.success) {

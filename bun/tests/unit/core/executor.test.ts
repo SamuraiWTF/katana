@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { TaskExecutor, executeTasks, allSucceeded, getFailures, getChanges } from "../../../src/core/executor";
-import { MockState, getMockState } from "../../../src/core/mock-state";
-import { PluginRegistry, getPluginRegistry } from "../../../src/plugins/registry";
+import {
+	allSucceeded,
+	executeTasks,
+	getChanges,
+	getFailures,
+	TaskExecutor,
+} from "../../../src/core/executor";
+import { getMockState, MockState } from "../../../src/core/mock-state";
+import { getPluginRegistry, PluginRegistry } from "../../../src/plugins/registry";
 import type { Task } from "../../../src/types/module";
 
 describe("TaskExecutor", () => {
@@ -20,9 +26,7 @@ describe("TaskExecutor", () => {
 	describe("execute", () => {
 		test("executes docker task", async () => {
 			const executor = new TaskExecutor({ mock: true });
-			const tasks: Task[] = [
-				{ docker: { name: "test", image: "nginx:latest" } },
-			];
+			const tasks: Task[] = [{ docker: { name: "test", image: "nginx:latest" } }];
 
 			const results = await executor.execute(tasks, "install");
 
@@ -33,9 +37,7 @@ describe("TaskExecutor", () => {
 
 		test("executes service task", async () => {
 			const executor = new TaskExecutor({ mock: true });
-			const tasks: Task[] = [
-				{ service: { name: "nginx", state: "running" } },
-			];
+			const tasks: Task[] = [{ service: { name: "nginx", state: "running" } }];
 
 			const results = await executor.execute(tasks, "install");
 
@@ -59,9 +61,7 @@ describe("TaskExecutor", () => {
 
 		test("executes file task", async () => {
 			const executor = new TaskExecutor({ mock: true });
-			const tasks: Task[] = [
-				{ file: { path: "/opt/myapp", state: "directory" } },
-			];
+			const tasks: Task[] = [{ file: { path: "/opt/myapp", state: "directory" } }];
 
 			const results = await executor.execute(tasks, "install");
 
@@ -113,9 +113,7 @@ describe("TaskExecutor", () => {
 
 		test("tracks task duration", async () => {
 			const executor = new TaskExecutor({ mock: true });
-			const tasks: Task[] = [
-				{ service: { name: "nginx", state: "running" } },
-			];
+			const tasks: Task[] = [{ service: { name: "nginx", state: "running" } }];
 
 			const results = await executor.execute(tasks, "install");
 
@@ -214,9 +212,7 @@ describe("TaskExecutor", () => {
 		test("passes install operation to plugins", async () => {
 			const executor = new TaskExecutor({ mock: true });
 			// Create container with image (install creates it)
-			const tasks: Task[] = [
-				{ docker: { name: "test", image: "nginx:latest" } },
-			];
+			const tasks: Task[] = [{ docker: { name: "test", image: "nginx:latest" } }];
 
 			await executor.execute(tasks, "install");
 

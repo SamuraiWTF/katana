@@ -5,11 +5,7 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { ReverseproxyParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 const NGINX_SITES_AVAILABLE = "/etc/nginx/sites-available";
 const NGINX_SITES_ENABLED = "/etc/nginx/sites-enabled";
@@ -17,10 +13,7 @@ const NGINX_SITES_ENABLED = "/etc/nginx/sites-enabled";
 export class ReverseproxyPlugin extends BasePlugin {
 	readonly name = "reverseproxy";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = ReverseproxyParamsSchema.safeParse(params);
 		if (!parsed.success) {

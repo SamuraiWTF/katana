@@ -5,21 +5,14 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { DockerParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 type DockerAction = "pull" | "run" | "start" | "stop" | "rm";
 
 export class DockerPlugin extends BasePlugin {
 	readonly name = "docker";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = DockerParamsSchema.safeParse(params);
 		if (!parsed.success) {
@@ -223,10 +216,7 @@ export class DockerPlugin extends BasePlugin {
 	/**
 	 * Run a docker command and return result
 	 */
-	private async runDocker(
-		args: string[],
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	private async runDocker(args: string[], context: ExecutionContext): Promise<PluginResult> {
 		try {
 			context.logger.info(`docker ${args.join(" ")}`);
 

@@ -4,14 +4,9 @@
  */
 
 import { EventEmitter } from "events";
-import type { Task } from "../types/module";
-import type {
-	ExecutionContext,
-	Logger,
-	Operation,
-	PluginResult,
-} from "../types/plugin";
 import { getPluginRegistry } from "../plugins/registry";
+import type { Task } from "../types/module";
+import type { ExecutionContext, Logger, Operation, PluginResult } from "../types/plugin";
 import { isMockMode } from "./mock-state";
 
 // =============================================================================
@@ -146,8 +141,7 @@ export class TaskExecutor extends EventEmitter<ExecutorEvents> {
 				}
 			} catch (error) {
 				const duration = performance.now() - start;
-				const errorMessage =
-					error instanceof Error ? error.message : String(error);
+				const errorMessage = error instanceof Error ? error.message : String(error);
 
 				const failResult: PluginResult = {
 					success: false,
@@ -193,10 +187,7 @@ export class TaskExecutor extends EventEmitter<ExecutorEvents> {
 		// Otherwise, generate from plugin key and params
 		const pluginKey = this.findPluginKey(task);
 		if (pluginKey) {
-			const params = (task as Record<string, unknown>)[pluginKey] as Record<
-				string,
-				unknown
-			>;
+			const params = (task as Record<string, unknown>)[pluginKey] as Record<string, unknown>;
 			const identifier = params.name || params.path || params.dest || params.hostname;
 			if (identifier) {
 				return `${pluginKey}: ${identifier}`;

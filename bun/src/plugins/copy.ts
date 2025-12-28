@@ -5,19 +5,12 @@
 
 import { getMockState, isMockMode } from "../core/mock-state";
 import { CopyParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class CopyPlugin extends BasePlugin {
 	readonly name = "copy";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = CopyParamsSchema.safeParse(params);
 		if (!parsed.success) {
@@ -98,9 +91,7 @@ export class CopyPlugin extends BasePlugin {
 			context.logger.info(`Wrote content to: ${dest}`);
 			return this.success(`Wrote content to ${dest}`);
 		} catch (error) {
-			return this.failure(
-				`copy failed: ${error instanceof Error ? error.message : String(error)}`,
-			);
+			return this.failure(`copy failed: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 

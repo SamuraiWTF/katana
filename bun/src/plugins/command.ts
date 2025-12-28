@@ -4,19 +4,12 @@
 
 import { isMockMode } from "../core/mock-state";
 import { CommandParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class CommandPlugin extends BasePlugin {
 	readonly name = "command";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = CommandParamsSchema.safeParse(params);
 		if (!parsed.success) {
@@ -27,9 +20,7 @@ export class CommandPlugin extends BasePlugin {
 
 		// Safety check - require unsafe flag for potentially dangerous commands
 		if (!unsafe && this.isDangerous(cmd)) {
-			return this.failure(
-				`Command appears dangerous. Set unsafe: true to execute: ${cmd}`,
-			);
+			return this.failure(`Command appears dangerous. Set unsafe: true to execute: ${cmd}`);
 		}
 
 		// Mock mode - just log and succeed

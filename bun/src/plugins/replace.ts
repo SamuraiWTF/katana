@@ -4,19 +4,12 @@
 
 import { isMockMode } from "../core/mock-state";
 import { ReplaceParamsSchema } from "../types/module";
-import {
-	BasePlugin,
-	type ExecutionContext,
-	type PluginResult,
-} from "../types/plugin";
+import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
 
 export class ReplacePlugin extends BasePlugin {
 	readonly name = "replace";
 
-	async execute(
-		params: unknown,
-		context: ExecutionContext,
-	): Promise<PluginResult> {
+	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = ReplaceParamsSchema.safeParse(params);
 		if (!parsed.success) {

@@ -162,7 +162,7 @@ describe("status command", () => {
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("Module: dvwa");
 		expect(result.stdout).toContain("Category: targets");
-		expect(result.stdout).toContain("Status: not_installed");
+		expect(result.stdout).toContain("Status: not installed");
 	});
 
 	test("finds module with case-insensitive name", async () => {
@@ -396,9 +396,7 @@ describe("list command - lock mode", () => {
 // =============================================================================
 
 describe("stub commands", () => {
-	const stubs = [
-		{ cmd: "update", name: "update" },
-	];
+	const stubs = [{ cmd: "update", name: "update" }];
 
 	for (const { cmd, name } of stubs) {
 		test(`${name} shows not implemented`, async () => {
