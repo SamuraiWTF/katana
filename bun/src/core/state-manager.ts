@@ -298,19 +298,12 @@ export class StateManager {
 
 	/**
 	 * Get the status of a module using ModuleStatus enum.
-	 * For Phase 2, this returns NOT_INSTALLED or INSTALLED based on state file.
-	 * Future phases will add RUNNING/STOPPED checks.
+	 * Returns NOT_INSTALLED or INSTALLED based on the state file.
+	 * For running/stopped status, use StatusChecker which performs live checks.
 	 */
 	async getModuleStatus(moduleName: string): Promise<ModuleStatus> {
 		const isInstalled = await this.isModuleInstalled(moduleName);
-
-		if (isInstalled) {
-			// In Phase 2, we only track installed state.
-			// Phase 4 will add running/stopped checks.
-			return ModuleStatus.INSTALLED;
-		}
-
-		return ModuleStatus.NOT_INSTALLED;
+		return isInstalled ? ModuleStatus.INSTALLED : ModuleStatus.NOT_INSTALLED;
 	}
 }
 

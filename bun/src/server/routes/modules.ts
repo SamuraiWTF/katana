@@ -20,6 +20,23 @@ import {
 } from "../types";
 
 // =============================================================================
+// Lock Mode Helpers
+// =============================================================================
+
+/**
+ * Check if a module is accessible when the system is locked.
+ * Returns true if not locked, or if the module is in the locked list.
+ */
+function isModuleAccessibleWhenLocked(
+	name: string,
+	lockState: { locked: boolean; modules: string[] },
+): boolean {
+	if (!lockState.locked) return true;
+	const lockedNames = new Set(lockState.modules.map((m) => m.toLowerCase()));
+	return lockedNames.has(name.toLowerCase());
+}
+
+// =============================================================================
 // List Modules
 // =============================================================================
 
@@ -99,6 +116,14 @@ export async function listModules(req: Request): Promise<Response> {
  * GET /api/modules/:name - Get single module details
  */
 export async function getModule(name: string): Promise<Response> {
+	// Check lock state - only allow access to locked modules when locked
+	const stateManager = StateManager.getInstance();
+	const lockState = await stateManager.getLockState();
+
+	if (!isModuleAccessibleWhenLocked(name, lockState)) {
+		return jsonResponse(errorResponse("NOT_FOUND", `Module not found: ${name}`), 404);
+	}
+
 	const result = await loadModule(name);
 
 	if (!result.success || !result.module) {
@@ -135,6 +160,14 @@ export async function getModule(name: string): Promise<Response> {
  * GET /api/modules/:name/status - Get module status
  */
 export async function getModuleStatus(name: string): Promise<Response> {
+	// Check lock state - only allow access to locked modules when locked
+	const stateManager = StateManager.getInstance();
+	const lockState = await stateManager.getLockState();
+
+	if (!isModuleAccessibleWhenLocked(name, lockState)) {
+		return jsonResponse(errorResponse("NOT_FOUND", `Module not found: ${name}`), 404);
+	}
+
 	const result = await loadModule(name);
 
 	if (!result.success || !result.module) {
@@ -145,7 +178,6 @@ export async function getModuleStatus(name: string): Promise<Response> {
 	const statusResult = await statusChecker.checkStatus(result.module);
 
 	// Get installation info
-	const stateManager = StateManager.getInstance();
 	const installInfo = await stateManager.getModuleInstallInfo(name);
 
 	return jsonResponse(
@@ -173,12 +205,13 @@ async function startOperation(name: string, operation: Operation): Promise<Respo
 		return jsonResponse(errorResponse("NOT_FOUND", `Module not found: ${name}`), 404);
 	}
 
-	// Check lock mode for install/remove
-	if (operation === "install" || operation === "remove") {
-		const stateManager = StateManager.getInstance();
-		const lockState = await stateManager.getLockState();
+	// Check lock mode - acts as rudimentary auth
+	const stateManager = StateManager.getInstance();
+	const lockState = await stateManager.getLockState();
 
-		if (lockState.locked) {
+	if (lockState.locked) {
+		// Block install/remove entirely when locked
+		if (operation === "install" || operation === "remove") {
 			return jsonResponse(
 				errorResponse(
 					"LOCKED",
@@ -188,6 +221,11 @@ async function startOperation(name: string, operation: Operation): Promise<Respo
 				),
 				403,
 			);
+		}
+
+		// For start/stop, only allow on locked (installed) modules
+		if (!isModuleAccessibleWhenLocked(name, lockState)) {
+			return jsonResponse(errorResponse("NOT_FOUND", `Module not found: ${name}`), 404);
 		}
 	}
 

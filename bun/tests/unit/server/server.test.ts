@@ -294,12 +294,33 @@ describe("REST API Server", () => {
 			}
 		});
 
-		test("start/stop allowed when locked", async () => {
+		test("start/stop allowed when locked (only for locked modules)", async () => {
 			const stateManager = StateManager.getInstance();
-			await stateManager.enableLock({ message: "Locked" });
 
-			// Use modules that haven't been touched in other tests
-			const startRes = await fetch(`${baseUrl}/api/modules/nikto/start`, {
+			// Clean up any existing installed modules and lock state
+			if (await stateManager.isLocked()) {
+				await stateManager.disableLock();
+			}
+			for (const mod of await stateManager.getInstalledModuleNames()) {
+				await stateManager.removeModule(mod);
+			}
+
+			// Install modules so they're in the locked list
+			// Using modules that successfully load (ffuf, trufflehog)
+			await stateManager.installModule("ffuf");
+			await stateManager.installModule("trufflehog");
+
+			// Enable lock - these modules will be in the locked list
+			await stateManager.enableLock({ message: "Locked for test" });
+
+			// Verify lock state is correct
+			const lockState = await stateManager.getLockState();
+			expect(lockState.locked).toBe(true);
+			expect(lockState.modules).toContain("ffuf");
+			expect(lockState.modules).toContain("trufflehog");
+
+			// Start/stop should work on locked modules
+			const startRes = await fetch(`${baseUrl}/api/modules/ffuf/start`, {
 				method: "POST",
 			});
 			expect(startRes.status).toBe(202);
@@ -308,6 +329,12 @@ describe("REST API Server", () => {
 				method: "POST",
 			});
 			expect(stopRes.status).toBe(202);
+
+			// Start on a non-locked module should return 404
+			const nonLockedRes = await fetch(`${baseUrl}/api/modules/zap/start`, {
+				method: "POST",
+			});
+			expect(nonLockedRes.status).toBe(404);
 		});
 	});
 
@@ -344,8 +371,8 @@ describe("REST API Server", () => {
 		});
 
 		test("GET /api/operations/:id/stream returns SSE response", async () => {
-			// Start an operation
-			const startRes = await fetch(`${baseUrl}/api/modules/sqlmap/install`, {
+			// Start an operation (using ffuf which loads successfully)
+			const startRes = await fetch(`${baseUrl}/api/modules/ffuf/install`, {
 				method: "POST",
 			});
 			const startData = (await startRes.json()) as TestApiResponse;

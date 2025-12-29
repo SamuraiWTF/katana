@@ -6,17 +6,21 @@ import { Command } from "commander";
 import { stringify as yamlStringify } from "yaml";
 import { DependencyResolver } from "./core/dependencies";
 import { allSucceeded, getChanges, getFailures, TaskExecutor } from "./core/executor";
+import { ConfigManager } from "./core/config-manager";
+import { ModuleFetcher } from "./core/module-fetcher";
 import {
 	formatModuleLoadError,
 	formatModuleLoaderErrors,
 	loadAllModules,
 	loadModule,
+	ModuleLoader,
 	ModulesNotFoundError,
 	validateModuleFile,
 } from "./core/module-loader";
 import { StateManager } from "./core/state-manager";
 import { StatusChecker } from "./core/status";
 import { getPluginRegistry } from "./plugins/registry";
+import { createServer, printServerInfo } from "./server";
 import type { ModuleCategory, Operation, Task } from "./types";
 import { ConfigSchema, DEFAULT_CONFIG } from "./types/config";
 
@@ -226,15 +230,6 @@ program
 			process.exit(1);
 		}
 	});
-
-// =============================================================================
-// Stub Commands (for future phases)
-// =============================================================================
-
-const stubAction = (command: string) => () => {
-	console.log(`'${command}' is not yet implemented`);
-	console.log("This feature will be available in a future version.");
-};
 
 // =============================================================================
 // Init Command
@@ -807,10 +802,6 @@ program
 // Update Command
 // =============================================================================
 
-import { ConfigManager } from "./core/config-manager";
-import { ModuleFetcher } from "./core/module-fetcher";
-import { ModuleLoader } from "./core/module-loader";
-
 interface UpdateOptions {
 	branch?: string;
 	force?: boolean;
@@ -869,8 +860,6 @@ program
 // =============================================================================
 // Serve Command
 // =============================================================================
-
-import { createServer, printServerInfo } from "./server";
 
 interface ServeOptions {
 	port?: number;
