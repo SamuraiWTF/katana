@@ -1,0 +1,45 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bun
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run tests
+        run: bun test
+
+      - name: Build binary
+        run: bun run build
+
+      - name: Rename binary with version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          mv bin/katana bin/katana-linux-amd64-${VERSION}
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bun/bin/katana-linux-amd64-*
+          fail_on_unmatched_files: true
