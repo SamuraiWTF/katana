@@ -32,8 +32,12 @@ export type LogConfig = z.infer<typeof LogConfigSchema>;
  * Main configuration schema for /etc/katana/config.yml
  */
 export const ConfigSchema = z.object({
-	/** Path to modules directory */
-	modulesPath: z.string().default("../modules"),
+	/** Path to modules directory (resolved dynamically if not set) */
+	modulesPath: z.string().optional(),
+	/** GitHub repository URL for fetching modules */
+	modulesRepo: z.string().default("https://github.com/SamuraiWTF/katana"),
+	/** Git branch to use when fetching/updating modules */
+	modulesBranch: z.string().default("main"),
 	/** Path to state directory (installed.yml, katana.lock) */
 	statePath: z.string().default("/var/lib/katana"),
 	/** Base domain for module URLs (e.g., 'test' -> dvwa.test) */
@@ -59,3 +63,13 @@ export const CONFIG_PATHS = [
 	"~/.config/katana/config.yml",
 	"./config.yml",
 ] as const;
+
+/**
+ * Default user data directory for modules (used when modulesPath not configured)
+ */
+export const DEFAULT_USER_DATA_DIR = "~/.local/share/katana";
+
+/**
+ * Default modules subdirectory name
+ */
+export const MODULES_SUBDIR = "modules";

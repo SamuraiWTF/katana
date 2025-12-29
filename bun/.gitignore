@@ -4,6 +4,8 @@ node_modules
 # output
 out
 dist
+bin/
+katana
 *.tgz
 
 # code coverage

@@ -1,6 +1,9 @@
-import { dirname, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { parse as parseYaml, YAMLParseError } from "yaml";
 import { formatModuleError, type Module, type ModuleCategory, safeParseModule } from "../types";
+import { type Config, DEFAULT_USER_DATA_DIR, MODULES_SUBDIR } from "../types/config";
 
 // =============================================================================
 // Types
@@ -70,41 +73,187 @@ export interface ModuleLoaderOptions {
 }
 
 // =============================================================================
+// Custom Error for Missing Modules
+// =============================================================================
+
+export class ModulesNotFoundError extends Error {
+	constructor() {
+		super(
+			"Modules directory not found.\n\n" +
+				"Run 'katana update' to fetch modules from GitHub, or\n" +
+				"Set 'modulesPath' in your config file (~/.config/katana/config.yml), or\n" +
+				"Set KATANA_HOME environment variable.",
+		);
+		this.name = "ModulesNotFoundError";
+	}
+}
+
+// =============================================================================
+// Path Resolution Helpers
+// =============================================================================
+
+/**
+ * Expand ~ to home directory in paths
+ */
+function expandPath(path: string): string {
+	if (path.startsWith("~/")) {
+		return join(homedir(), path.slice(2));
+	}
+	return path;
+}
+
+/**
+ * Check if a directory exists and contains files
+ */
+function directoryExists(path: string): boolean {
+	try {
+		return existsSync(path);
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Get the default user modules directory
+ */
+function getDefaultUserModulesDir(): string {
+	return join(expandPath(DEFAULT_USER_DATA_DIR), MODULES_SUBDIR);
+}
+
+/**
+ * Get the modules directory relative to the binary location
+ * Works for both compiled binary and development mode
+ */
+function getBinaryRelativeModulesDir(): string {
+	// Bun.main gives us the path to the main script/executable
+	const mainPath = Bun.main;
+	const binaryDir = dirname(mainPath);
+
+	// For compiled binary in bin/, modules would be at ../modules
+	// For dev mode running src/cli.ts, go up to bun/ then to ../modules
+	const possiblePaths = [
+		resolve(binaryDir, "..", MODULES_SUBDIR), // bin/katana -> modules/
+		resolve(binaryDir, "..", "..", MODULES_SUBDIR), // src/cli.ts -> modules/
+		resolve(binaryDir, "..", "..", "..", MODULES_SUBDIR), // src/core/module-loader.ts -> modules/
+	];
+
+	for (const path of possiblePaths) {
+		if (directoryExists(path)) {
+			return path;
+		}
+	}
+
+	// Return the first one as default (will be checked again later)
+	// biome-ignore lint/style/noNonNullAssertion: We know the array has at least one element
+	return possiblePaths[0]!;
+}
+
+// =============================================================================
 // ModuleLoader Class
 // =============================================================================
 
 export class ModuleLoader {
-	private modulesDir: string;
+	private modulesDir: string | null = null;
+	private configModulesPath?: string;
 	private cache: Map<string, LoadedModule> = new Map();
 	private cacheTimestamp = 0;
 	private cacheTTL = 5000; // 5 seconds
 
 	private static instance: ModuleLoader | null = null;
 
-	constructor(modulesDir?: string) {
-		this.modulesDir = modulesDir ?? this.resolveDefaultModulesDir();
+	constructor(modulesDir?: string, configModulesPath?: string) {
+		this.configModulesPath = configModulesPath;
+		// If explicit modulesDir provided, use it directly
+		if (modulesDir) {
+			this.modulesDir = modulesDir;
+		}
+		// Otherwise, resolve dynamically when needed
 	}
 
 	/**
-	 * Resolve the default modules directory relative to this file
-	 * Path: bun/src/core/ -> bun/ -> project root -> modules/
+	 * Resolve modules directory with priority:
+	 * 1. Explicit constructor parameter (already set in modulesDir)
+	 * 2. Config file modulesPath (if set and directory exists)
+	 * 3. KATANA_HOME/modules environment variable (if set and exists)
+	 * 4. ~/.local/share/katana/modules (if exists)
+	 * 5. ../modules relative to binary (for git clone scenario)
+	 * 6. null - modules need to be fetched
 	 */
-	private resolveDefaultModulesDir(): string {
-		return resolve(import.meta.dir, "..", "..", "..", "modules");
+	private resolveModulesDir(): string | null {
+		// Already resolved
+		if (this.modulesDir !== null) {
+			return this.modulesDir;
+		}
+
+		// Priority 1: Config file modulesPath
+		if (this.configModulesPath) {
+			const expanded = expandPath(this.configModulesPath);
+			if (directoryExists(expanded)) {
+				this.modulesDir = expanded;
+				return this.modulesDir;
+			}
+		}
+
+		// Priority 2: KATANA_HOME environment variable
+		const katanaHome = process.env.KATANA_HOME;
+		if (katanaHome) {
+			const envPath = join(katanaHome, MODULES_SUBDIR);
+			if (directoryExists(envPath)) {
+				this.modulesDir = envPath;
+				return this.modulesDir;
+			}
+		}
+
+		// Priority 3: User's local share directory
+		const userModulesDir = getDefaultUserModulesDir();
+		if (directoryExists(userModulesDir)) {
+			this.modulesDir = userModulesDir;
+			return this.modulesDir;
+		}
+
+		// Priority 4: Relative to binary (for git clone + build scenario)
+		const binaryRelative = getBinaryRelativeModulesDir();
+		if (directoryExists(binaryRelative)) {
+			this.modulesDir = binaryRelative;
+			return this.modulesDir;
+		}
+
+		// No modules found
+		return null;
+	}
+
+	/**
+	 * Get the resolved modules directory
+	 * @throws ModulesNotFoundError if modules not available
+	 */
+	getModulesDir(): string {
+		const dir = this.resolveModulesDir();
+		if (!dir) {
+			throw new ModulesNotFoundError();
+		}
+		return dir;
+	}
+
+	/**
+	 * Check if modules are available without throwing
+	 */
+	hasModules(): boolean {
+		return this.resolveModulesDir() !== null;
 	}
 
 	/**
 	 * Get or create the singleton instance
+	 * @param config Optional config to use for modulesPath
 	 */
-	static getInstance(): ModuleLoader {
+	static getInstance(config?: Config): ModuleLoader {
 		if (!ModuleLoader.instance) {
-			ModuleLoader.instance = new ModuleLoader();
+			ModuleLoader.instance = new ModuleLoader(undefined, config?.modulesPath);
 		}
 		return ModuleLoader.instance;
 	}
 
 	/**
-	 * Reset singleton (useful for testing)
+	 * Reset singleton (useful for testing and after module updates)
 	 */
 	static resetInstance(): void {
 		ModuleLoader.instance = null;
@@ -127,14 +276,16 @@ export class ModuleLoader {
 
 	/**
 	 * Discover all YAML files in the modules directory
+	 * @throws ModulesNotFoundError if modules directory not available
 	 */
 	private async discoverModuleFiles(category?: ModuleCategory): Promise<string[]> {
+		const modulesDir = this.getModulesDir(); // Throws if not available
 		const pattern = category ? `${category}/*.yml` : "**/*.yml";
 		const glob = new Bun.Glob(pattern);
 		const files: string[] = [];
 
 		for await (const file of glob.scan({
-			cwd: this.modulesDir,
+			cwd: modulesDir,
 			absolute: true,
 			onlyFiles: true,
 		})) {

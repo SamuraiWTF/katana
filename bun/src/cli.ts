@@ -11,6 +11,7 @@ import {
 	formatModuleLoaderErrors,
 	loadAllModules,
 	loadModule,
+	ModulesNotFoundError,
 	validateModuleFile,
 } from "./core/module-loader";
 import { StateManager } from "./core/state-manager";
@@ -22,6 +23,28 @@ import { ConfigSchema, DEFAULT_CONFIG } from "./types/config";
 const program = new Command();
 
 program.name("katana").version("0.1.0").description("Module deployment and management CLI");
+
+// =============================================================================
+// Error Handling Helpers
+// =============================================================================
+
+/**
+ * Handle ModulesNotFoundError with helpful guidance
+ */
+function handleModulesNotFoundError(error: unknown): boolean {
+	if (error instanceof ModulesNotFoundError) {
+		console.error("");
+		console.error("Modules not found.");
+		console.error("");
+		console.error("To fix this, you can:");
+		console.error("  1. Run 'katana update' to fetch modules from GitHub");
+		console.error("  2. Run 'katana init' to set up configuration");
+		console.error("  3. Set KATANA_HOME environment variable to your katana directory");
+		console.error("");
+		return true;
+	}
+	return false;
+}
 
 // =============================================================================
 // Implemented Commands
@@ -119,6 +142,9 @@ program
 				console.error(`Warning: ${result.errors.length} module(s) failed to load`);
 			}
 		} catch (error) {
+			if (handleModulesNotFoundError(error)) {
+				process.exit(1);
+			}
 			console.error("Error loading modules:", error instanceof Error ? error.message : error);
 			process.exit(1);
 		}
@@ -193,6 +219,9 @@ program
 				process.exit(1);
 			}
 		} catch (error) {
+			if (handleModulesNotFoundError(error)) {
+				process.exit(1);
+			}
 			console.error("Error checking status:", error instanceof Error ? error.message : error);
 			process.exit(1);
 		}
@@ -218,6 +247,8 @@ interface InitOptions {
 	domainBase?: string;
 	port?: number;
 	modulesPath?: string;
+	modulesBranch?: string;
+	fetchModules?: boolean;
 	force?: boolean;
 }
 
@@ -267,8 +298,13 @@ program
 	.option("--domain-base <base>", "Base domain for module URLs (e.g., 'test' -> dvwa.test)")
 	.option("--port <port>", "Server port", Number.parseInt)
 	.option("--modules-path <path>", "Path to modules directory")
+	.option("--modules-branch <branch>", "Git branch for module updates (default: main)")
+	.option("--fetch-modules", "Fetch modules from GitHub after creating config")
 	.option("--force", "Overwrite existing config file without prompting")
 	.action(async (options: InitOptions) => {
+		// Import ModuleFetcher here to avoid circular dependency issues
+		const { ModuleFetcher } = await import("./core/module-fetcher");
+
 		try {
 			// Determine output path
 			let outputPath: string;
@@ -286,7 +322,9 @@ program
 
 			let domainBase = options.domainBase ?? DEFAULT_CONFIG.domainBase;
 			let port = options.port ?? DEFAULT_CONFIG.server.port;
-			let modulesPath = options.modulesPath ?? DEFAULT_CONFIG.modulesPath;
+			let modulesPath = options.modulesPath; // Now optional, undefined means auto-resolve
+			let modulesBranch = options.modulesBranch ?? DEFAULT_CONFIG.modulesBranch;
+			let fetchModules = options.fetchModules ?? false;
 			let shouldWrite = true;
 
 			if (options.nonInteractive) {
@@ -341,11 +379,30 @@ program
 							port = DEFAULT_CONFIG.server.port;
 						}
 
-						modulesPath = await promptWithDefault(
+						modulesBranch = await promptWithDefault(
 							rl,
-							"Path to modules directory",
-							options.modulesPath ?? DEFAULT_CONFIG.modulesPath,
+							"Git branch for module updates",
+							options.modulesBranch ?? DEFAULT_CONFIG.modulesBranch,
 						);
+
+						// Only prompt for modulesPath if user wants custom location
+						const customModulesPath = await promptConfirm(
+							rl,
+							"Use custom modules path? (No = auto-detect)",
+							false,
+						);
+						if (customModulesPath) {
+							modulesPath = await promptWithDefault(
+								rl,
+								"Path to modules directory",
+								options.modulesPath ?? "~/.local/share/katana/modules",
+							);
+						}
+
+						// Ask about fetching modules
+						if (!options.fetchModules) {
+							fetchModules = await promptConfirm(rl, "Fetch modules from GitHub now?", true);
+						}
 
 						console.log("");
 					}
@@ -358,11 +415,12 @@ program
 				return;
 			}
 
-			// Build config object
-			const config = {
-				modulesPath,
+			// Build config object - only include modulesPath if explicitly set
+			const config: Record<string, unknown> = {
 				statePath: DEFAULT_CONFIG.statePath,
 				domainBase,
+				modulesRepo: DEFAULT_CONFIG.modulesRepo,
+				modulesBranch,
 				server: {
 					port,
 					host: DEFAULT_CONFIG.server.host,
@@ -373,6 +431,11 @@ program
 					format: DEFAULT_CONFIG.log.format,
 				},
 			};
+
+			// Only add modulesPath if explicitly configured
+			if (modulesPath) {
+				config.modulesPath = modulesPath;
+			}
 
 			// Validate config
 			const result = ConfigSchema.safeParse(config);
@@ -400,7 +463,32 @@ program
 			console.log("Settings:");
 			console.log(`  Domain base: ${domainBase}`);
 			console.log(`  Server port: ${port}`);
-			console.log(`  Modules path: ${modulesPath}`);
+			console.log(`  Modules branch: ${modulesBranch}`);
+			if (modulesPath) {
+				console.log(`  Modules path: ${modulesPath}`);
+			} else {
+				console.log(`  Modules path: (auto-detect)`);
+			}
+
+			// Fetch modules if requested
+			if (fetchModules) {
+				console.log("");
+				console.log("Fetching modules...");
+
+				const fetcher = new ModuleFetcher();
+				const fetchResult = await fetcher.fetchModules({
+					repo: DEFAULT_CONFIG.modulesRepo,
+					branch: modulesBranch,
+				});
+
+				if (fetchResult.success) {
+					console.log(fetchResult.isUpdate ? "Modules updated." : "Modules cloned.");
+					console.log(`  Location: ${fetchResult.modulesPath}`);
+				} else {
+					console.error(`Failed to fetch modules: ${fetchResult.message}`);
+					console.error("You can try again later with: katana update");
+				}
+			}
 		} catch (error) {
 			console.error("Error initializing config:", error instanceof Error ? error.message : error);
 			process.exit(1);
@@ -523,7 +611,16 @@ async function executeModuleOperation(
 	options: ModuleOperationOptions = {},
 ): Promise<void> {
 	// Load module to verify it exists
-	const result = await loadModule(moduleName);
+	let result: Awaited<ReturnType<typeof loadModule>>;
+	try {
+		result = await loadModule(moduleName);
+	} catch (error) {
+		if (handleModulesNotFoundError(error)) {
+			process.exit(1);
+		}
+		throw error;
+	}
+
 	if (!result.success || !result.module) {
 		if (result.error) {
 			console.error(formatModuleLoadError(result.error));
@@ -706,13 +803,73 @@ program
 		}
 	});
 
-program.command("update").description("Update installed modules").action(stubAction("update"));
+// =============================================================================
+// Update Command
+// =============================================================================
+
+import { ConfigManager } from "./core/config-manager";
+import { ModuleFetcher } from "./core/module-fetcher";
+import { ModuleLoader } from "./core/module-loader";
+
+interface UpdateOptions {
+	branch?: string;
+	force?: boolean;
+}
+
+program
+	.command("update")
+	.description("Fetch or update modules from GitHub")
+	.option("-b, --branch <branch>", "Git branch to use (overrides config)")
+	.option("--force", "Force re-clone even if modules exist")
+	.action(async (options: UpdateOptions) => {
+		try {
+			// Load config for repo and branch defaults
+			const configManager = ConfigManager.getInstance();
+			const config = await configManager.loadConfig();
+
+			const repo = config.modulesRepo;
+			const branch = options.branch ?? config.modulesBranch;
+
+			console.log("");
+			console.log("Updating modules...");
+			console.log(`  Repository: ${repo}`);
+			console.log(`  Branch: ${branch}`);
+			console.log("");
+
+			const fetcher = new ModuleFetcher();
+			const result = await fetcher.fetchModules({ repo, branch });
+
+			if (result.success) {
+				console.log(
+					result.isUpdate ? "Modules updated successfully." : "Modules cloned successfully.",
+				);
+				console.log(`  Location: ${result.modulesPath}`);
+				console.log("");
+
+				// Reset the ModuleLoader singleton to pick up new path
+				ModuleLoader.resetInstance();
+
+				// Verify modules are accessible
+				const loader = ModuleLoader.getInstance(config);
+				if (loader.hasModules()) {
+					const modules = await loader.getModuleNames();
+					console.log(`Found ${modules.length} modules.`);
+				}
+			} else {
+				console.error("Failed to update modules:");
+				console.error(`  ${result.message}`);
+				process.exit(1);
+			}
+		} catch (error) {
+			console.error("Error updating modules:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
 
 // =============================================================================
 // Serve Command
 // =============================================================================
 
-import { ConfigManager } from "./core/config-manager";
 import { createServer, printServerInfo } from "./server";
 
 interface ServeOptions {

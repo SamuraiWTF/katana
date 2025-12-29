@@ -407,20 +407,26 @@ describe("list command - lock mode", () => {
 });
 
 // =============================================================================
-// stub commands
+// update command
 // =============================================================================
 
-describe("stub commands", () => {
-	const stubs = [{ cmd: "update", name: "update" }];
+describe("update command", () => {
+	test("update fetches modules from GitHub", async () => {
+		const result = await cli("update");
 
-	for (const { cmd, name } of stubs) {
-		test(`${name} shows not implemented`, async () => {
-			const result = await cli(cmd);
+		// Should succeed and show progress
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Updating modules...");
+		expect(result.stdout).toContain("Repository:");
+		expect(result.stdout).toContain("Branch:");
+	});
 
-			expect(result.exitCode).toBe(0);
-			expect(result.stdout).toContain("not yet implemented");
-		});
-	}
+	test("update accepts --branch option", async () => {
+		const result = await cli("update --branch main");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Branch: main");
+	});
 });
 
 // =============================================================================

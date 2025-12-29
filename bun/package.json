@@ -8,7 +8,7 @@
 		"test": "bun test",
 		"lint": "biome check src/",
 		"format": "biome format --write src/",
-		"build": "bun build --compile src/cli.ts --outfile katana"
+		"build": "mkdir -p bin && bun build --compile src/cli.ts --outfile bin/katana"
 	},
 	"dependencies": {
 		"commander": "latest",
