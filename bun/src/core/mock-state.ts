@@ -26,6 +26,12 @@ export interface MockFileState {
 	mode?: string;
 }
 
+export interface MockCertState {
+	initialized: boolean;
+	domainBase: string;
+	createdAt: string;
+}
+
 // =============================================================================
 // MockState Class
 // =============================================================================
@@ -39,6 +45,7 @@ export class MockState {
 	private services: Map<string, MockServiceState> = new Map();
 	private files: Map<string, MockFileState> = new Map();
 	private fileLines: Map<string, Set<string>> = new Map();
+	private certState: MockCertState | null = null;
 
 	private static instance: MockState | null = null;
 
@@ -69,6 +76,7 @@ export class MockState {
 		this.fileLines.clear();
 		this.reverseProxies.clear();
 		this.gitRepos.clear();
+		this.certState = null;
 	}
 
 	// =========================================================================
@@ -353,6 +361,52 @@ export class MockState {
 	 */
 	repoExists(dest: string): boolean {
 		return this.gitRepos.has(dest);
+	}
+
+	// =========================================================================
+	// Certificate Management
+	// =========================================================================
+
+	/**
+	 * Initialize certificates for a domain
+	 */
+	initCerts(domainBase: string): void {
+		this.certState = {
+			initialized: true,
+			domainBase,
+			createdAt: new Date().toISOString(),
+		};
+	}
+
+	/**
+	 * Check if certificates have been initialized
+	 */
+	hasCerts(): boolean {
+		return this.certState?.initialized ?? false;
+	}
+
+	/**
+	 * Get certificate state
+	 */
+	getCertState(): MockCertState | null {
+		return this.certState;
+	}
+
+	/**
+	 * Get mock certificate paths (for testing)
+	 */
+	getCertPaths(statePath: string): {
+		cert: string;
+		key: string;
+		rootCACert: string;
+		rootCAKey: string;
+	} {
+		return {
+			cert: `${statePath}/certs/wildcard.crt`,
+			key: `${statePath}/certs/wildcard.key`,
+			rootCACert: `${statePath}/certs/rootCA.crt`,
+			rootCAKey: `${statePath}/certs/rootCA.key`,
+		};
 	}
 }
 

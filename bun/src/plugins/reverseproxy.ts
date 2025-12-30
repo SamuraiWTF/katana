@@ -1,8 +1,16 @@
 /**
  * Reverseproxy plugin for managing nginx reverse proxy configs.
  * Creates/removes nginx config files in sites-available/enabled.
+ *
+ * Features:
+ * - Domain transformation: hostname prefix + configured domainBase
+ * - Wildcard certificate from statePath
+ * - HTTP→HTTPS redirect
+ * - Nginx reload after config changes
  */
 
+import { CertManager } from "../core/cert-manager";
+import { ConfigManager } from "../core/config-manager";
 import { getMockState, isMockMode } from "../core/mock-state";
 import { ReverseproxyParamsSchema } from "../types/module";
 import { BasePlugin, type ExecutionContext, type PluginResult } from "../types/plugin";
@@ -13,6 +21,16 @@ const NGINX_SITES_ENABLED = "/etc/nginx/sites-enabled";
 export class ReverseproxyPlugin extends BasePlugin {
 	readonly name = "reverseproxy";
 
+	/**
+	 * Transform module hostname to use configured domainBase
+	 * e.g., "juice-shop.wtf" with domainBase "abcde.penlabs.net" → "juice-shop.abcde.penlabs.net"
+	 */
+	private transformHostname(moduleHostname: string, domainBase: string): string {
+		// Extract prefix (everything before first dot)
+		const prefix = moduleHostname.split(".")[0];
+		return `${prefix}.${domainBase}`;
+	}
+
 	async execute(params: unknown, context: ExecutionContext): Promise<PluginResult> {
 		// Validate params
 		const parsed = ReverseproxyParamsSchema.safeParse(params);
@@ -20,7 +38,14 @@ export class ReverseproxyPlugin extends BasePlugin {
 			return this.failure(`Invalid reverseproxy params: ${parsed.error.message}`);
 		}
 
-		const { hostname, proxy_pass } = parsed.data;
+		const { hostname: moduleHostname, proxy_pass } = parsed.data;
+
+		// Load config to get domainBase
+		const configManager = ConfigManager.getInstance();
+		const config = await configManager.loadConfig();
+
+		// Transform hostname using domainBase
+		const hostname = this.transformHostname(moduleHostname, config.domainBase);
 
 		// Determine action from operation context
 		const isRemove = context.operation === "remove";
@@ -38,7 +63,7 @@ export class ReverseproxyPlugin extends BasePlugin {
 		}
 
 		// Real execution
-		return this.executeReal(hostname, proxy_pass, isRemove, context);
+		return this.executeReal(hostname, proxy_pass, isRemove, context, config.statePath);
 	}
 
 	/**
@@ -61,7 +86,13 @@ export class ReverseproxyPlugin extends BasePlugin {
 			return this.success(`Removed reverse proxy for ${hostname}`);
 		}
 
-		// Create
+		// Create - check if certs exist
+		if (!mock.hasCerts()) {
+			return this.failure(
+				"Certificates not initialized. Run 'katana cert init' first.",
+			);
+		}
+
 		if (mock.reverseProxyExists(hostname)) {
 			return this.noop(`Reverse proxy for ${hostname} already exists`);
 		}
@@ -78,6 +109,7 @@ export class ReverseproxyPlugin extends BasePlugin {
 		proxyPass: string | undefined,
 		isRemove: boolean,
 		context: ExecutionContext,
+		statePath: string,
 	): Promise<PluginResult> {
 		const availablePath = `${NGINX_SITES_AVAILABLE}/${hostname}`;
 		const enabledPath = `${NGINX_SITES_ENABLED}/${hostname}`;
@@ -100,6 +132,9 @@ export class ReverseproxyPlugin extends BasePlugin {
 				// Remove config file
 				await Bun.$`rm ${availablePath}`.quiet();
 
+				// Reload nginx
+				await this.reloadNginx(context);
+
 				context.logger.info(`Removed reverse proxy config: ${hostname}`);
 				return this.success(`Removed reverse proxy for ${hostname}`);
 			}
@@ -109,19 +144,35 @@ export class ReverseproxyPlugin extends BasePlugin {
 				return this.failure("proxy_pass is required for creating reverse proxy");
 			}
 
+			// Check if certificates exist
+			const certManager = CertManager.getInstance();
+			certManager.setStatePath(statePath);
+
+			if (!(await certManager.hasCerts())) {
+				return this.failure(
+					"Certificates not initialized. Run 'katana cert init' first.",
+				);
+			}
+
 			const availableFile = Bun.file(availablePath);
 			if (await availableFile.exists()) {
 				return this.noop(`Reverse proxy for ${hostname} already exists`);
 			}
 
+			// Get certificate paths
+			const certPaths = certManager.getCertPaths();
+
 			// Generate nginx config
-			const config = this.generateNginxConfig(hostname, proxyPass);
+			const config = this.generateNginxConfig(hostname, proxyPass, certPaths.cert, certPaths.key);
 
 			// Write config to sites-available
 			await Bun.write(availablePath, config);
 
 			// Create symlink in sites-enabled
 			await Bun.$`ln -sf ${availablePath} ${enabledPath}`.quiet();
+
+			// Reload nginx
+			await this.reloadNginx(context);
 
 			context.logger.info(`Created reverse proxy: ${hostname} -> ${proxyPass}`);
 			return this.success(`Created reverse proxy for ${hostname}`);
@@ -133,15 +184,64 @@ export class ReverseproxyPlugin extends BasePlugin {
 	}
 
 	/**
-	 * Generate nginx reverse proxy config
+	 * Reload nginx configuration
 	 */
-	private generateNginxConfig(hostname: string, proxyPass: string): string {
-		return `server {
+	private async reloadNginx(context: ExecutionContext): Promise<void> {
+		try {
+			// Check if nginx is installed
+			try {
+				await Bun.$`which nginx`.quiet();
+			} catch {
+				context.logger.warn("nginx not found, skipping reload");
+				return;
+			}
+
+			// Test configuration
+			const testResult = await Bun.$`nginx -t`.quiet();
+			if (testResult.exitCode !== 0) {
+				context.logger.warn(`nginx config test failed: ${testResult.stderr}`);
+				return;
+			}
+
+			// Reload nginx - try systemctl first, fall back to nginx -s reload
+			try {
+				await Bun.$`systemctl reload nginx`.quiet();
+				context.logger.info("Nginx reloaded via systemctl");
+			} catch {
+				// systemctl might not be available, try direct reload
+				await Bun.$`nginx -s reload`.quiet();
+				context.logger.info("Nginx reloaded via nginx -s reload");
+			}
+		} catch (error) {
+			context.logger.warn(
+				`Failed to reload nginx: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}
+
+	/**
+	 * Generate nginx reverse proxy config with HTTP→HTTPS redirect
+	 */
+	private generateNginxConfig(
+		hostname: string,
+		proxyPass: string,
+		certPath: string,
+		keyPath: string,
+	): string {
+		return `# HTTP -> HTTPS redirect
+server {
+    listen 80;
+    server_name ${hostname};
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS server
+server {
     listen 443 ssl;
     server_name ${hostname};
 
-    ssl_certificate /etc/ssl/certs/katana.crt;
-    ssl_certificate_key /etc/ssl/private/katana.key;
+    ssl_certificate ${certPath};
+    ssl_certificate_key ${keyPath};
 
     location / {
         proxy_pass ${proxyPass};
@@ -163,11 +263,18 @@ export class ReverseproxyPlugin extends BasePlugin {
 			return false;
 		}
 
+		// Load config to get domainBase
+		const configManager = ConfigManager.getInstance();
+		const config = await configManager.loadConfig();
+
+		// Transform hostname
+		const hostname = this.transformHostname(parsed.data.hostname, config.domainBase);
+
 		if (isMockMode()) {
-			return getMockState().reverseProxyExists(parsed.data.hostname);
+			return getMockState().reverseProxyExists(hostname);
 		}
 
-		const availablePath = `${NGINX_SITES_AVAILABLE}/${parsed.data.hostname}`;
+		const availablePath = `${NGINX_SITES_AVAILABLE}/${hostname}`;
 		const file = Bun.file(availablePath);
 		return file.exists();
 	}

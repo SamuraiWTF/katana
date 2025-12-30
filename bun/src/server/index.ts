@@ -35,8 +35,14 @@ import { errorResponse, jsonResponse } from "./types";
 // Types
 // =============================================================================
 
+export interface TlsConfig {
+	cert: string;
+	key: string;
+}
+
 export interface ServerOptions {
 	config: Config;
+	tls?: TlsConfig;
 }
 
 // =============================================================================
@@ -47,15 +53,17 @@ export interface ServerOptions {
  * Create and start the HTTP server
  */
 export function createServer(options: ServerOptions): HttpServer {
-	const { config } = options;
+	const { config, tls } = options;
 
 	// Initialize logger
 	createLogger(config);
 	const logger = getLogger();
 
-	logger.info({ port: config.server.port, host: config.server.host }, "Starting server");
+	const protocol = tls ? "https" : "http";
+	logger.info({ port: config.server.port, host: config.server.host, tls: !!tls }, "Starting server");
 
-	return Bun.serve({
+	// Build server config
+	const serverConfig: Parameters<typeof Bun.serve>[0] = {
 		port: config.server.port,
 		hostname: config.server.host,
 
@@ -103,7 +111,17 @@ export function createServer(options: ServerOptions): HttpServer {
 		error(error: Error): Response {
 			return errorHandler(error);
 		},
-	});
+	};
+
+	// Add TLS configuration if provided
+	if (tls) {
+		serverConfig.tls = {
+			cert: Bun.file(tls.cert),
+			key: Bun.file(tls.key),
+		};
+	}
+
+	return Bun.serve(serverConfig);
 }
 
 /**
@@ -189,11 +207,15 @@ async function routeRequest(
 /**
  * Print server startup info
  */
-export function printServerInfo(config: Config): void {
-	const baseUrl = `http://${config.server.host}:${config.server.port}`;
+export function printServerInfo(config: Config, tls = false): void {
+	const protocol = tls ? "https" : "http";
+	const baseUrl = `${protocol}://${config.server.host}:${config.server.port}`;
 
 	console.log("");
 	console.log(`Katana API server listening on ${baseUrl}`);
+	if (tls) {
+		console.log("TLS enabled");
+	}
 	console.log("");
 	console.log("Endpoints:");
 	console.log(`  GET  ${baseUrl}/health`);

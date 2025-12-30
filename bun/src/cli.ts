@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
 import { stringify as yamlStringify } from "yaml";
+import { CertManager } from "./core/cert-manager";
 import { DependencyResolver } from "./core/dependencies";
 import { allSucceeded, getChanges, getFailures, TaskExecutor } from "./core/executor";
 import { ConfigManager } from "./core/config-manager";
@@ -858,6 +859,301 @@ program
 	});
 
 // =============================================================================
+// Cert Command
+// =============================================================================
+
+const certCmd = program.command("cert").description("Certificate management");
+
+certCmd
+	.command("init")
+	.description("Generate root CA and wildcard certificate")
+	.option("--force", "Regenerate certificates even if they exist")
+	.action(async (options: { force?: boolean }) => {
+		try {
+			// Load config to get domainBase and statePath
+			const configManager = ConfigManager.getInstance();
+			const config = await configManager.loadConfig();
+
+			console.log("");
+			console.log("Certificate Initialization");
+			console.log("==========================");
+			console.log("");
+			console.log(`Domain: *.${config.domainBase}`);
+			console.log(`State path: ${config.statePath}`);
+			console.log("");
+
+			// Initialize cert manager with config
+			const certManager = CertManager.getInstance();
+			certManager.setStatePath(config.statePath);
+
+			const result = await certManager.initCerts(config.domainBase, options.force);
+
+			if (result.success) {
+				console.log(result.message);
+				if (result.certPaths) {
+					console.log("");
+					console.log("Certificate files:");
+					console.log(`  Root CA:   ${result.certPaths.rootCACert}`);
+					console.log(`  Wildcard:  ${result.certPaths.cert}`);
+					console.log("");
+					console.log("Next steps:");
+					console.log("  1. Run 'sudo katana cert install-ca' to trust the root CA system-wide");
+					console.log("  2. Or import the root CA into your browser manually");
+				}
+			} else {
+				console.error(`Error: ${result.message}`);
+				process.exit(1);
+			}
+		} catch (error) {
+			console.error("Error initializing certificates:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
+
+certCmd
+	.command("install-ca")
+	.description("Install root CA to system trust store (requires sudo)")
+	.action(async () => {
+		try {
+			// Load config to get statePath
+			const configManager = ConfigManager.getInstance();
+			const config = await configManager.loadConfig();
+
+			// Initialize cert manager with config
+			const certManager = CertManager.getInstance();
+			certManager.setStatePath(config.statePath);
+
+			console.log("");
+			console.log("Installing Root CA to system trust store...");
+			console.log("");
+
+			const result = await certManager.installCA();
+
+			if (result.success) {
+				console.log(result.message);
+				console.log("");
+				console.log("The Katana root CA is now trusted system-wide.");
+				console.log("Browsers may need to be restarted to pick up the change.");
+			} else {
+				console.error(`Error: ${result.message}`);
+				process.exit(1);
+			}
+		} catch (error) {
+			console.error("Error installing CA:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
+
+certCmd
+	.command("status")
+	.description("Show certificate status")
+	.action(async () => {
+		try {
+			// Load config to get statePath
+			const configManager = ConfigManager.getInstance();
+			const config = await configManager.loadConfig();
+
+			// Initialize cert manager with config
+			const certManager = CertManager.getInstance();
+			certManager.setStatePath(config.statePath);
+
+			console.log("");
+			console.log("Certificate Status");
+			console.log("==================");
+			console.log("");
+
+			const hasCerts = await certManager.hasCerts();
+			const state = await certManager.getCertState();
+
+			if (hasCerts && state) {
+				console.log(`Status: Initialized`);
+				console.log(`Domain: *.${state.domainBase}`);
+				console.log(`Created: ${state.createdAt}`);
+				console.log("");
+
+				const paths = certManager.getCertPaths();
+				console.log("Certificate files:");
+				console.log(`  Root CA cert: ${paths.rootCACert}`);
+				console.log(`  Root CA key:  ${paths.rootCAKey}`);
+				console.log(`  Wildcard cert: ${paths.cert}`);
+				console.log(`  Wildcard key:  ${paths.key}`);
+			} else {
+				console.log(`Status: Not initialized`);
+				console.log("");
+				console.log("Run 'katana cert init' to generate certificates.");
+			}
+		} catch (error) {
+			console.error("Error checking certificate status:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
+
+// =============================================================================
+// Service Command (systemd)
+// =============================================================================
+
+const SYSTEMD_SERVICE_PATH = "/etc/systemd/system/katana.service";
+
+const SYSTEMD_SERVICE_CONTENT = `[Unit]
+Description=Katana Module Management Server
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/katana serve --tls --host 0.0.0.0
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/katana /etc/nginx/sites-available /etc/nginx/sites-enabled
+
+# Environment
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+`;
+
+const serviceCmd = program.command("service").description("Manage katana systemd service");
+
+serviceCmd
+	.command("install")
+	.description("Install and enable systemd service (requires sudo)")
+	.option("--no-tls", "Run server without TLS")
+	.option("--port <port>", "Override default port", Number.parseInt)
+	.action(async (options: { tls?: boolean; port?: number }) => {
+		try {
+			// Check if running as root
+			if (process.getuid?.() !== 0) {
+				console.error("Error: This command requires root privileges.");
+				console.error("Run with: sudo katana service install");
+				process.exit(1);
+			}
+
+			// Build ExecStart line based on options
+			let execStart = "/usr/local/bin/katana serve --host 0.0.0.0";
+			if (options.tls !== false) {
+				execStart += " --tls";
+			}
+			if (options.port) {
+				execStart += ` --port ${options.port}`;
+			}
+
+			// Customize service content
+			const serviceContent = SYSTEMD_SERVICE_CONTENT.replace(
+				/ExecStart=.*/,
+				`ExecStart=${execStart}`,
+			);
+
+			console.log("");
+			console.log("Installing Katana systemd service...");
+			console.log("");
+
+			// Write service file
+			await Bun.write(SYSTEMD_SERVICE_PATH, serviceContent);
+			console.log(`Created ${SYSTEMD_SERVICE_PATH}`);
+
+			// Reload systemd
+			await Bun.$`systemctl daemon-reload`.quiet();
+			console.log("Reloaded systemd configuration");
+
+			// Enable service
+			await Bun.$`systemctl enable katana.service`.quiet();
+			console.log("Enabled katana.service");
+
+			console.log("");
+			console.log("Service installed successfully.");
+			console.log("");
+			console.log("Commands:");
+			console.log("  sudo systemctl start katana    # Start the service");
+			console.log("  sudo systemctl stop katana     # Stop the service");
+			console.log("  sudo systemctl status katana   # Check status");
+			console.log("  journalctl -u katana -f        # View logs");
+		} catch (error) {
+			console.error("Error installing service:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
+
+serviceCmd
+	.command("uninstall")
+	.description("Stop and remove systemd service (requires sudo)")
+	.action(async () => {
+		try {
+			// Check if running as root
+			if (process.getuid?.() !== 0) {
+				console.error("Error: This command requires root privileges.");
+				console.error("Run with: sudo katana service uninstall");
+				process.exit(1);
+			}
+
+			console.log("");
+			console.log("Uninstalling Katana systemd service...");
+			console.log("");
+
+			// Stop service if running
+			try {
+				await Bun.$`systemctl stop katana.service`.quiet();
+				console.log("Stopped katana.service");
+			} catch {
+				// Service might not be running
+			}
+
+			// Disable service
+			try {
+				await Bun.$`systemctl disable katana.service`.quiet();
+				console.log("Disabled katana.service");
+			} catch {
+				// Service might not be enabled
+			}
+
+			// Remove service file
+			const file = Bun.file(SYSTEMD_SERVICE_PATH);
+			if (await file.exists()) {
+				await Bun.$`rm ${SYSTEMD_SERVICE_PATH}`.quiet();
+				console.log(`Removed ${SYSTEMD_SERVICE_PATH}`);
+			}
+
+			// Reload systemd
+			await Bun.$`systemctl daemon-reload`.quiet();
+			console.log("Reloaded systemd configuration");
+
+			console.log("");
+			console.log("Service uninstalled.");
+		} catch (error) {
+			console.error("Error uninstalling service:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
+
+serviceCmd
+	.command("status")
+	.description("Show systemd service status")
+	.action(async () => {
+		try {
+			const file = Bun.file(SYSTEMD_SERVICE_PATH);
+			if (!(await file.exists())) {
+				console.log("Katana service is not installed.");
+				console.log("Run 'sudo katana service install' to install it.");
+				return;
+			}
+
+			// Get service status
+			const result = await Bun.$`systemctl status katana.service --no-pager`.nothrow();
+			console.log(result.stdout.toString());
+		} catch (error) {
+			console.error("Error checking service status:", error instanceof Error ? error.message : error);
+			process.exit(1);
+		}
+	});
+
+// =============================================================================
 // Serve Command
 // =============================================================================
 
@@ -865,6 +1161,7 @@ interface ServeOptions {
 	port?: number;
 	host?: string;
 	cors?: boolean;
+	tls?: boolean;
 }
 
 program
@@ -873,6 +1170,7 @@ program
 	.option("-p, --port <port>", "Port to listen on", Number.parseInt)
 	.option("--host <host>", "Host to bind to")
 	.option("--cors", "Enable CORS for development")
+	.option("--tls", "Enable TLS using Katana certificates")
 	.action(async (options: ServeOptions) => {
 		try {
 			// Load config
@@ -890,9 +1188,28 @@ program
 				config.server.cors = true;
 			}
 
+			// Handle TLS option
+			let tlsConfig: { cert: string; key: string } | undefined;
+			if (options.tls) {
+				const certManager = CertManager.getInstance();
+				certManager.setStatePath(config.statePath);
+
+				if (!(await certManager.hasCerts())) {
+					console.error("Error: Certificates not initialized.");
+					console.error("Run 'katana cert init' first to generate certificates.");
+					process.exit(1);
+				}
+
+				const certPaths = certManager.getCertPaths();
+				tlsConfig = {
+					cert: certPaths.cert,
+					key: certPaths.key,
+				};
+			}
+
 			// Start server
-			createServer({ config });
-			printServerInfo(config);
+			createServer({ config, tls: tlsConfig });
+			printServerInfo(config, options.tls);
 		} catch (error) {
 			console.error("Error starting server:", error instanceof Error ? error.message : error);
 			process.exit(1);
