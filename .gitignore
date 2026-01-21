@@ -22,6 +22,9 @@ bun.lockb
 .env
 .env.local
 
+# Vagrant
+.vagrant/
+
 # IDE
 .vscode/
 .idea/
