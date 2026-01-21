@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build binary for Linux
+        run: |
+          bun build src/cli.ts --compile --target=bun-linux-x64 --outfile katana-linux-x64
+          chmod +x katana-linux-x64
+
+      - name: Test binary
+        run: |
+          ./katana-linux-x64 --version
+          ./katana-linux-x64 --help
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            # Extract changelog section for this version
+            awk '/^## \[${{ steps.get_version.outputs.VERSION }}\]/{flag=1;next}/^## \[/{flag=0}flag' CHANGELOG.md > release_notes.md
+            if [ ! -s release_notes.md ]; then
+              echo "Release ${{ steps.get_version.outputs.VERSION }}" > release_notes.md
+              echo "" >> release_notes.md
+              echo "See [CHANGELOG.md](CHANGELOG.md) for details." >> release_notes.md
+            fi
+          else
+            echo "Release ${{ steps.get_version.outputs.VERSION }}" > release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Katana ${{ steps.get_version.outputs.VERSION }}
+          body_path: release_notes.md
+          files: |
+            katana-linux-x64
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

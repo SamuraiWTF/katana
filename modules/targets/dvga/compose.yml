@@ -1,0 +1,11 @@
+services:
+  dvga:
+    image: dolevf/dvga
+    environment:
+      - WEB_HOST=0.0.0.0
+    networks:
+      - katana-net
+
+networks:
+  katana-net:
+    external: true

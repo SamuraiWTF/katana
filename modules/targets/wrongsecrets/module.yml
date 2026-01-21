@@ -1,0 +1,10 @@
+name: wrongsecrets
+category: targets
+description: OWASP WrongSecrets - Vulnerable app with secrets management challenges
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: wrongsecrets
+    service: wrongsecrets
+    port: 8080

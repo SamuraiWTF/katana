@@ -1,0 +1,10 @@
+name: dvga
+category: targets
+description: Damn Vulnerable GraphQL Application - GraphQL security testing
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: dvga
+    service: dvga
+    port: 5013

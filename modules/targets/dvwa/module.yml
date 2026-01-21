@@ -1,0 +1,10 @@
+name: dvwa
+category: targets
+description: Damn Vulnerable Web Application - PHP/MySQL
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: dvwa
+    service: dvwa
+    port: 80
