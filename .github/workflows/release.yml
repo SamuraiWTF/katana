@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Build UI
+        run: bun run src/ui/build.ts
+
       - name: Build binary for Linux
         run: |
           bun build src/cli.ts --compile --target=bun-linux-x64 --outfile katana-linux-x64

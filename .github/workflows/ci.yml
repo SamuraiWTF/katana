@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: bunx biome check src/
 
+      - name: Build UI
+        run: bun run src/ui/build.ts
+
       - name: Build binary
         run: bun build src/cli.ts --compile --outfile katana
 
