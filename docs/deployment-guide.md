@@ -141,7 +141,7 @@ docker compose version
 #### 1. Install Katana
 
 ```bash
-curl -L https://github.com/SamuraiWTF/katana2/releases/latest/download/katana-linux-x64 -o katana
+curl -L https://github.com/SamuraiWTF/katana/releases/latest/download/katana-linux-x64 -o katana
 chmod +x katana
 sudo mv katana /usr/local/bin/
 ```

@@ -31,8 +31,8 @@ This guide covers setting up a development environment and contributing code to 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/SamuraiWTF/katana2.git
-cd katana2
+git clone https://github.com/SamuraiWTF/katana.git
+cd katana
 ```
 
 ### 2. Install Dependencies
@@ -335,4 +335,4 @@ Add certificate renewal reminder to doctor command
 
 - **Architecture questions:** See [Architecture](architecture.md)
 - **Module development:** See [Module Development](module-development.md)
-- **Issues:** Open a [GitHub issue](https://github.com/SamuraiWTF/katana2/issues)
+- **Issues:** Open a [GitHub issue](https://github.com/SamuraiWTF/katana/issues)

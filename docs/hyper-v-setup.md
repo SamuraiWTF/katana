@@ -212,8 +212,8 @@ sudo apt install -y git
 
 # Clone the repository
 cd ~
-git clone https://github.com/SamuraiWTF/katana2.git
-cd katana2
+git clone https://github.com/SamuraiWTF/katana.git
+cd katana
 
 # Install dependencies
 bun install
@@ -226,7 +226,7 @@ Alternatively, you can share your Windows development directory with the VM usin
 Now you can test Katana in the local scenario:
 
 ```bash
-cd ~/katana2
+cd ~/katana
 
 # Run from source
 bun run src/cli.ts --help

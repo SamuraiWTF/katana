@@ -13,7 +13,7 @@ Katana is designed for **isolated training environments only**. It deploys inten
 
 ### For Katana Itself
 
-If you discover a security vulnerability in Katana (the management tool, not the vulnerable targets it deploys), please [open an issue](https://github.com/SamuraiWTF/katana2/issues/new) with:
+If you discover a security vulnerability in Katana (the management tool, not the vulnerable targets it deploys), please [open an issue](https://github.com/SamuraiWTF/katana/issues/new) with:
 
 - Description of the vulnerability
 - Steps to reproduce

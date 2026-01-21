@@ -16,7 +16,7 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 443, host: 8443, host_ip: "127.0.0.1"
 
   # Sync the project directory with exclusions
-  config.vm.synced_folder ".", "/home/vagrant/katana2", type: "rsync",
+  config.vm.synced_folder ".", "/home/vagrant/katana", type: "rsync",
     rsync__exclude: [
       ".git/",
       "bin/",
@@ -59,7 +59,7 @@ Vagrant.configure("2") do |config|
     echo ""
     echo "Next steps:"
     echo "  1. vagrant ssh"
-    echo "  2. cd katana2"
+    echo "  2. cd katana"
     echo "  3. bun install"
     echo "  4. bun run build:ui && bun run build"
     echo "  5. sudo ./bin/katana setup-proxy"

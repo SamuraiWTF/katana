@@ -331,7 +331,7 @@ If you can't resolve an issue:
    katana logs <target> > target-logs.txt
    ```
 
-3. **Open an issue:** [GitHub Issues](https://github.com/SamuraiWTF/katana2/issues)
+3. **Open an issue:** [GitHub Issues](https://github.com/SamuraiWTF/katana/issues)
 
 Include:
 - Output from `katana doctor`

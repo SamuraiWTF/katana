@@ -46,7 +46,7 @@ async function setupProxy(): Promise<void> {
       const possiblePaths = [
         `${process.cwd()}/katana`, // If run from bin/ directory
         `${process.cwd()}/bin/katana`, // If run from project root
-        `/home/${sudoUser}/projects/katana2/bin/katana`, // Common dev path
+        `/home/${sudoUser}/projects/katana/bin/katana`, // Common dev path
         `/home/${sudoUser}/bin/katana`, // User's bin directory
       ];
 

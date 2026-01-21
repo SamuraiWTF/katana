@@ -23,7 +23,7 @@ Katana is the lab management solution for [OWASP SamuraiWTF](https://github.com/
 
 ```bash
 # 1. Download the latest release
-curl -L https://github.com/SamuraiWTF/katana2/releases/latest/download/katana-linux-x64 -o katana
+curl -L https://github.com/SamuraiWTF/katana/releases/latest/download/katana-linux-x64 -o katana
 chmod +x katana
 
 # 2. Initialize certificates
@@ -79,8 +79,8 @@ See the [Getting Started Guide](docs/getting-started.md) for detailed installati
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-- **Bug Reports** - [Open an issue](https://github.com/SamuraiWTF/katana2/issues/new?template=bug_report.md)
-- **Feature Requests** - [Open an issue](https://github.com/SamuraiWTF/katana2/issues/new?template=feature_request.md)
+- **Bug Reports** - [Open an issue](https://github.com/SamuraiWTF/katana/issues/new?template=bug_report.md)
+- **Feature Requests** - [Open an issue](https://github.com/SamuraiWTF/katana/issues/new?template=feature_request.md)
 - **New Targets** - See the [Module Development Guide](docs/module-development.md)
 
 ## Security

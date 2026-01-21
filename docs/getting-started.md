@@ -55,7 +55,7 @@ Download the latest release from GitHub:
 
 ```bash
 # Download the binary
-curl -L https://github.com/SamuraiWTF/katana2/releases/latest/download/katana-linux-x64 -o katana
+curl -L https://github.com/SamuraiWTF/katana/releases/latest/download/katana-linux-x64 -o katana
 
 # Make it executable
 chmod +x katana
@@ -73,8 +73,8 @@ Requires [Bun](https://bun.sh/) runtime.
 curl -fsSL https://bun.sh/install | bash
 
 # Clone the repository
-git clone https://github.com/SamuraiWTF/katana2.git
-cd katana2
+git clone https://github.com/SamuraiWTF/katana.git
+cd katana
 
 # Install dependencies
 bun install
