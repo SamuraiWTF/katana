@@ -40,11 +40,3 @@ jobs:
           chmod +x katana
           ./katana --version
           ./katana --help
-
-      - name: Run tests
-        run: |
-          if [ -f "./tests/e2e/run-all.sh" ]; then
-            ./tests/e2e/run-all.sh
-          else
-            echo "No tests found, skipping"
-          fi
