@@ -54,6 +54,13 @@ Vagrant.configure("2") do |config|
     echo "==> Setting up Katana directories..."
     su - vagrant -c 'mkdir -p ~/.config/katana ~/.local/share/katana'
 
+    echo "==> Creating katana symlink in PATH..."
+    # Create symlink so 'katana' command works from anywhere
+    # Note: The target doesn't need to exist yet - symlink will work once binary is built
+    mkdir -p /home/vagrant/katana/bin
+    ln -sf /home/vagrant/katana/bin/katana /usr/local/bin/katana
+    chown vagrant:vagrant /home/vagrant/katana/bin
+
     echo ""
     echo "==> VM provisioning complete!"
     echo ""
@@ -62,10 +69,10 @@ Vagrant.configure("2") do |config|
     echo "  2. cd katana"
     echo "  3. bun install"
     echo "  4. bun run build:ui && bun run build"
-    echo "  5. sudo ./bin/katana setup-proxy"
-    echo "  6. ./bin/katana cert init"
-    echo "  7. sudo ./bin/katana dns sync --all"
-    echo "  8. ./bin/katana doctor"
+    echo "  5. sudo katana setup-proxy"
+    echo "  6. katana cert init"
+    echo "  7. sudo katana dns sync --all"
+    echo "  8. katana doctor"
     echo ""
     echo "Development workflow:"
     echo "  - Edit files on Windows (your IDE)"
