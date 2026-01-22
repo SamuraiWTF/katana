@@ -1,0 +1,9 @@
+services:
+  dojo-scavenger-lite:
+    image: ghcr.io/samuraiwtf/dojo-scavenger-lite:latest
+    networks:
+      - katana-net
+
+networks:
+  katana-net:
+    external: true

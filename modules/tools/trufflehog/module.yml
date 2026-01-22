@@ -1,0 +1,7 @@
+name: trufflehog
+category: tools
+description: Find credentials in git repositories, filesystems, and cloud services
+
+install: ./install.sh
+remove: ./remove.sh
+install_requires_root: true

@@ -1,0 +1,7 @@
+name: ffuf
+category: tools
+description: Fast web fuzzer written in Go
+
+install: ./install.sh
+remove: ./remove.sh
+install_requires_root: true

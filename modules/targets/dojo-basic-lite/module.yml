@@ -1,0 +1,10 @@
+name: dojo-basic-lite
+category: targets
+description: Lightweight Dojo Basic training app - SQLi, XSS, and more
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: dojo-basic
+    service: dojo-basic-lite
+    port: 80

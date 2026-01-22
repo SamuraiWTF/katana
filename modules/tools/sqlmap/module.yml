@@ -1,0 +1,7 @@
+name: sqlmap
+category: tools
+description: Automatic SQL injection and database takeover tool
+
+install: ./install.sh
+remove: ./remove.sh
+install_requires_root: true
