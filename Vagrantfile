@@ -41,8 +41,8 @@ Vagrant.configure("2") do |config|
       curl -fsSL https://get.docker.com -o get-docker.sh
       sh get-docker.sh
       rm get-docker.sh
-      usermod -aG docker vagrant
     fi
+    usermod -aG docker vagrant
 
     echo "==> Installing Bun..."
     # Install Bun as vagrant user
