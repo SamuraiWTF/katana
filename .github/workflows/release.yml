@@ -38,6 +38,12 @@ jobs:
           ./katana-linux-x64 --version
           ./katana-linux-x64 --help
 
+      - name: Verify release artifacts
+        run: |
+          ls -lh katana-linux-*
+          file katana-linux-x64
+          file katana-linux-arm64
+
       - name: Extract version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
