@@ -1,0 +1,7 @@
+name: nikto
+category: tools
+description: Web server scanner for security vulnerabilities
+
+install: ./install.sh
+remove: ./remove.sh
+install_requires_root: true

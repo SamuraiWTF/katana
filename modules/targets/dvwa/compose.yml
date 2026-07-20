@@ -1,0 +1,23 @@
+services:
+  dvwa:
+    image: vulnerables/web-dvwa:latest
+    networks:
+      - katana-net
+    environment:
+      - DB_SERVER=db
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:10.6
+    networks:
+      - katana-net
+    environment:
+      - MYSQL_ROOT_PASSWORD=dvwa
+      - MYSQL_DATABASE=dvwa
+      - MYSQL_USER=dvwa
+      - MYSQL_PASSWORD=dvwa
+
+networks:
+  katana-net:
+    external: true

@@ -1,0 +1,9 @@
+services:
+  dojo-basic-lite:
+    image: ghcr.io/samuraiwtf/dojo-basic-lite:latest
+    networks:
+      - katana-net
+
+networks:
+  katana-net:
+    external: true

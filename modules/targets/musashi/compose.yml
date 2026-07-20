@@ -1,0 +1,19 @@
+services:
+  musashi:
+    image: ghcr.io/samuraiwtf/musashi-js:latest
+    networks:
+      - katana-net
+    environment:
+      - USE_TLS=true
+      - CORS_CLIENT_PORT=3021
+      - CORS_CLIENT_HOST=${CORS_CLIENT_HOST}
+      - CORS_API_PORT=3020
+      - CORS_API_HOST=${CORS_API_HOST}
+      - CORS_API_PROXY_PORT=443
+      - CSP_APP_PORT=3041
+      - JWT_PORT=3050
+      - JWT_HOST=${JWT_HOST}
+
+networks:
+  katana-net:
+    external: true

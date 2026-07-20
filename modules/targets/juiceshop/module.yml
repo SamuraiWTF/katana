@@ -1,0 +1,10 @@
+name: juiceshop
+category: targets
+description: OWASP Juice Shop - Modern JavaScript vulnerabilities
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: juiceshop
+    service: juiceshop
+    port: 3000

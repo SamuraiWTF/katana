@@ -1,0 +1,25 @@
+name: musashi
+category: targets
+description: Musashi.js - CORS, CSP, and JWT security demonstrations
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: cors
+    service: musashi
+    port: 3021
+  - hostname: api-cors
+    service: musashi
+    port: 3020
+  - hostname: csp
+    service: musashi
+    port: 3041
+  - hostname: jwt
+    service: musashi
+    port: 3050
+
+env:
+  CORS_CLIENT_HOST: cors
+  CORS_API_HOST: api-cors
+  CSP_HOST: csp
+  JWT_HOST: jwt

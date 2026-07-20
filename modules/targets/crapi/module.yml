@@ -1,0 +1,13 @@
+name: crapi
+category: targets
+description: OWASP crAPI - Completely Ridiculous API (vulnerable API security training target)
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: crapi
+    service: crapi-web
+    port: 80
+  - hostname: crapi-mail
+    service: mailhog
+    port: 8025

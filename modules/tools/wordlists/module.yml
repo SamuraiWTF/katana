@@ -1,0 +1,7 @@
+name: wordlists
+category: tools
+description: SecLists collection of wordlists for security testing (usernames, passwords, URLs, fuzzing payloads)
+
+install: ./install.sh
+remove: ./remove.sh
+install_requires_root: true

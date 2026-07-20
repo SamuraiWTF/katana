@@ -1,0 +1,9 @@
+services:
+  juiceshop:
+    image: bkimminich/juice-shop:latest
+    networks:
+      - katana-net
+
+networks:
+  katana-net:
+    external: true

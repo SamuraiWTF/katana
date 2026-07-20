@@ -1,0 +1,9 @@
+services:
+  wrongsecrets:
+    image: jeroenwillemsen/wrongsecrets:latest-no-vault
+    networks:
+      - katana-net
+
+networks:
+  katana-net:
+    external: true

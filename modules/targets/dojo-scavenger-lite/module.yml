@@ -1,0 +1,10 @@
+name: dojo-scavenger-lite
+category: targets
+description: Lightweight Dojo Scavenger Hunt - web security challenges
+
+compose: ./compose.yml
+
+proxy:
+  - hostname: dojo-scavenger
+    service: dojo-scavenger-lite
+    port: 80
