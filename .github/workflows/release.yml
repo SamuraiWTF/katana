@@ -44,6 +44,9 @@ jobs:
           file katana-linux-x64
           file katana-linux-arm64
 
+      - name: Package modules directory
+        run: zip -r modules.zip modules
+
       - name: Extract version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
@@ -71,6 +74,7 @@ jobs:
           files: |
             katana-linux-x64
             katana-linux-arm64
+            modules.zip
           draft: false
           prerelease: false
         env:
