@@ -20,7 +20,7 @@ export const ConfigSchema = z.object({
   /** Paths configuration */
   paths: z
     .object({
-      modules: z.string().default("./modules"),
+      modules: z.string().default("/opt/samurai/katana/modules"),
       data: z.string().default("~/.local/share/katana"),
       certs: z.string().default("~/.local/share/katana/certs"),
       state: z.string().default("~/.local/share/katana/state.yml"),
