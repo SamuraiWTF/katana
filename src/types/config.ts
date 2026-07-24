@@ -19,7 +19,7 @@ export const ConfigSchema = z.object({
   /** Paths configuration */
   paths: z
     .object({
-      modules: z.string().default("/opt/samurai/modules"),
+      modules: z.string().default("/opt/samurai/katana/modules"),
       data: z.string().default("~/.local/share/katana"),
       certs: z.string().default("~/.local/share/katana/certs"),
       state: z.string().default("~/.local/share/katana/state.yml"),
@@ -52,7 +52,7 @@ export const DEFAULT_CONFIG: Config = {
   local_domain: "samurai.wtf",
   dashboard_hostname: "katana",
   paths: {
-    modules: "/opt/samurai/modules",
+    modules: "/opt/samurai/katana/modules",
     data: "~/.local/share/katana",
     certs: "~/.local/share/katana/certs",
     state: "~/.local/share/katana/state.yml",
