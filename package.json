@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "bun run src/cli.ts",
     "build:ui": "bun run src/ui/build.ts",
-    "build": "bun run build:ui && bun build --compile src/cli.ts --outfile bin/katana",
+    "build": "bun run build:ui && KATANA_COMPILED=true bun build --compile src/cli.ts --outfile bin/katana",
     "test": "bun test",
     "lint": "bunx biome check src/",
     "format": "bunx biome format --write src/"

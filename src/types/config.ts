@@ -1,3 +1,4 @@
+import { isCompiled } from "@/utils/isCompiled" with { type: "macro" };
 import { z } from "zod";
 
 /**
@@ -47,23 +48,43 @@ export type Config = z.infer<typeof ConfigSchema>;
 /**
  * Default configuration values
  */
-export const DEFAULT_CONFIG: Config = {
-  install_type: "local",
-  local_domain: "samurai.wtf",
-  dashboard_hostname: "katana",
-  paths: {
-    modules: "/opt/samurai/katana/modules",
-    data: "~/.local/share/katana",
-    certs: "~/.local/share/katana/certs",
-    state: "~/.local/share/katana/state.yml",
-  },
-  proxy: {
-    http_port: 80,
-    https_port: 443,
-    bind_address: undefined,
-  },
-  docker_network: "katana-net",
-};
+export const DEFAULT_CONFIG: Config = ((compiled) => {
+  return compiled
+    ? {
+        install_type: "local",
+        local_domain: "samurai.wtf",
+        dashboard_hostname: "katana",
+        paths: {
+          modules: "/opt/katana/modules",
+          data: "~/.local/share/katana",
+          certs: "~/.local/share/katana/certs",
+          state: "~/.local/share/katana/state.yml",
+        },
+        proxy: {
+          http_port: 80,
+          https_port: 443,
+          bind_address: undefined,
+        },
+        docker_network: "katana-net",
+      }
+    : {
+        install_type: "local",
+        local_domain: "samurai.wtf",
+        dashboard_hostname: "katana",
+        paths: {
+          modules: "./modules",
+          data: "~/.local/share/katana",
+          certs: "~/.local/share/katana/certs",
+          state: "~/.local/share/katana/state.yml",
+        },
+        proxy: {
+          http_port: 80,
+          https_port: 443,
+          bind_address: undefined,
+        },
+        docker_network: "katana-net",
+      };
+})(isCompiled());
 
 /**
  * Validate and parse config data
