@@ -1,0 +1,98 @@
+name: Prerelease
+
+on:
+  push:
+    branches: [next]
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  prerelease:
+    name: Create Prerelease
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build UI
+        run: bun run src/ui/build.ts
+
+      - name: Build Linux binaries
+        run: |
+          bun build src/cli.ts --compile --target=bun-linux-x64 --outfile katana-linux-x64
+          bun build src/cli.ts --compile --target=bun-linux-arm64 --outfile katana-linux-arm64
+          chmod +x katana-linux-x64 katana-linux-arm64
+
+      - name: Test x64 binary
+        run: |
+          ./katana-linux-x64 --version
+          ./katana-linux-x64 --help
+
+      - name: Verify release artifacts
+        run: |
+          ls -lh katana-linux-*
+          file katana-linux-x64
+          file katana-linux-arm64
+
+      - name: Package modules directory
+        run: zip -r modules.zip modules
+
+      - name: Build prerelease notes
+        id: notes
+        run: |
+          {
+            echo "Automated prerelease build from \`next\`."
+            echo ""
+            echo "**Commit:** ${GITHUB_SHA}"
+            echo ""
+            echo "This tag moves with every push to \`next\` — it does not represent a stable release."
+          } > release_notes.md
+
+      # The "next" tag/release must move to point at the latest commit on every
+      # push. softprops/action-gh-release will not re-point an existing tag, so
+      # remove the previous next release+tag first (ignore failure on first run,
+      # when it doesn't exist yet).
+      - name: Remove previous next release and tag
+        run: gh release delete next --yes --cleanup-tag || true
+
+      - name: Create next prerelease
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: next
+          target_commitish: ${{ github.sha }}
+          name: "Katana next (dev build)"
+          body_path: release_notes.md
+          prerelease: true
+          make_latest: "false"
+          files: |
+            katana-linux-x64
+            katana-linux-arm64
+            modules.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Safety-net cleanup: keep only the N most recent *prerelease* releases.
+      # Filtering strictly on isPrerelease==true means actual (stable) releases
+      # are never touched by this step, regardless of naming or tagging.
+      - name: Prune old prerelease releases
+        run: |
+          KEEP=5
+          gh release list --limit 100 --json tagName,isPrerelease,createdAt \
+            --jq "[.[] | select(.isPrerelease==true)] | sort_by(.createdAt) | reverse | .[${KEEP}:] | .[].tagName" \
+          | while read -r tag; do
+              echo "Deleting old prerelease: $tag"
+              gh release delete "$tag" --yes --cleanup-tag || true
+            done
